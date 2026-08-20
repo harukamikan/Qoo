@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "584548655709",
+    "project_id": "qooo-f4816",
+    "storage_bucket": "qooo-f4816.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:584548655709:android:c23b43d8ce4289287b23b4",
+        "android_client_info": {
+          "package_name": "com.example.qoo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6hNnoq0uJkNVcR8hhGaSMIj5aRtsEyOc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
