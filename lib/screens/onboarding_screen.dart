@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'map_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -52,10 +53,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       return;
     }
 
-    // TODO: ここでFirestoreにUserProfileを保存する処理を後で追加
+      // TODO: ここでFirestoreにUserProfileを保存する処理を後で追加
     debugPrint('Name: ${_nameController.text}');
     debugPrint('Nationality: $_selectedNationality');
     debugPrint('Language: $_selectedLanguage');
+
+    // 地図画面へ遷移
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => const MapScreen()),
+    );
   }
 
   @override
