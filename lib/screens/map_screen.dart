@@ -1,11 +1,14 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as ll;
 import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../services/nearby_alert_service.dart';
+import '../utils/geo_utils.dart';
+
 /// 現在地からこの半径（メートル）以内の投稿だけを表示する。
+
 const double nearbyRadiusMeters = 500;
 
 /// 現在地が取れなかった時のフォールバック中心地点（福岡市天神付近）
@@ -32,11 +35,19 @@ class _MapScreenState extends State<MapScreen> {
   bool _isLoading = true;
   LocationIssue _locationIssue = LocationIssue.none;
   String? _commentsError;
+  final _alertService = NearbyAlertService();
 
   @override
   void initState() {
     super.initState();
     _loadEverything();
+    _alertService.start();
+  }
+
+  @override
+  void dispose() {
+    _alertService.stop();
+    super.dispose();
   }
 
   /// 現在地取得→Firestoreから投稿取得→距離計算、を一括で行う。
@@ -161,7 +172,7 @@ class _MapScreenState extends State<MapScreen> {
       if (lat == null || lng == null) continue;
 
       final point = ll.LatLng(lat, lng);
-      final distance = _distanceMeters(center, point);
+      final distance = distanceMeters(center, point);
       if (distance <= nearbyRadiusMeters) {
         results.add(NearbyComment(
           id: doc.id,
@@ -177,22 +188,6 @@ class _MapScreenState extends State<MapScreen> {
     results.sort((a, b) => a.distanceMeters.compareTo(b.distanceMeters));
     return results;
   }
-
-  /// Haversine公式による2点間の距離計算（メートル）
-  double _distanceMeters(ll.LatLng a, ll.LatLng b) {
-    const earthRadius = 6371000.0;
-    final dLat = _degToRad(b.latitude - a.latitude);
-    final dLng = _degToRad(b.longitude - a.longitude);
-    final lat1 = _degToRad(a.latitude);
-    final lat2 = _degToRad(b.latitude);
-
-    final h = sin(dLat / 2) * sin(dLat / 2) +
-        sin(dLng / 2) * sin(dLng / 2) * cos(lat1) * cos(lat2);
-    final c = 2 * atan2(sqrt(h), sqrt(1 - h));
-    return earthRadius * c;
-  }
-
-  double _degToRad(double deg) => deg * (pi / 180);
 
   @override
   Widget build(BuildContext context) {
