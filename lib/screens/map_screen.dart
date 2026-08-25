@@ -5,9 +5,19 @@ import 'package:latlong2/latlong.dart' as ll;
 import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// 現在地からこの半径（メートル）以内の投稿だけを表示する。
 const double nearbyRadiusMeters = 500;
 
+/// 現在地が取れなかった時のフォールバック中心地点（福岡市天神付近）
 final ll.LatLng fukuokaFallback = ll.LatLng(33.5902, 130.4017);
+
+/// 現在地取得がなぜうまくいかなかったかを表す。成功時は none。
+enum LocationIssue {
+  none,
+  serviceDisabled, // 端末の位置情報サービス自体がオフ
+  permissionDenied, // 今回拒否された（次回また聞ける）
+  permissionDeniedForever, // 完全拒否（設定から手動で有効にするしかない）
+}
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -20,6 +30,8 @@ class _MapScreenState extends State<MapScreen> {
   ll.LatLng? _currentLocation;
   List<NearbyComment> _nearbyComments = [];
   bool _isLoading = true;
+  LocationIssue _locationIssue = LocationIssue.none;
+  String? _commentsError;
 
   @override
   void initState() {
@@ -27,44 +39,117 @@ class _MapScreenState extends State<MapScreen> {
     _loadEverything();
   }
 
+  /// 現在地取得→Firestoreから投稿取得→距離計算、を一括で行う。
   Future<void> _loadEverything() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _commentsError = null;
+    });
 
-    final position = await _getCurrentPosition();
-    final center = position ?? fukuokaFallback;
-    final comments = await _fetchNearbyComments(center);
+    final locationResult = await _getCurrentPosition();
+    final center = locationResult.position ?? fukuokaFallback;
+
+    List<NearbyComment> comments = [];
+    String? commentsError;
+    try {
+      comments = await _fetchNearbyComments(center);
+    } catch (_) {
+      // Firestore取得失敗時は、空のリストのまま進めて画面は表示する。
+      // 「ぐるぐる止まったまま」にならないよう、必ずここでエラーを吸収する。
+      commentsError = '投稿データを取得できませんでした。右下のボタンで再読み込みしてください。';
+    }
 
     if (!mounted) return;
     setState(() {
-      _currentLocation = position;
+      _currentLocation = locationResult.position;
+      _locationIssue = locationResult.issue;
       _nearbyComments = comments;
+      _commentsError = commentsError;
       _isLoading = false;
     });
+
+    _showIssueMessageIfNeeded();
   }
 
-  Future<ll.LatLng?> _getCurrentPosition() async {
+  /// 位置情報・投稿取得で何か問題があれば、画面下部に一言メッセージを出す。
+  /// 優先度: 位置情報の問題 > 投稿取得の問題（両方あっても一つだけ出す）
+  void _showIssueMessageIfNeeded() {
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+
+    switch (_locationIssue) {
+      case LocationIssue.permissionDeniedForever:
+        messenger.showSnackBar(
+          SnackBar(
+            content: const Text('位置情報の許可がオフです。福岡市中心を表示しています。'),
+            action: SnackBarAction(
+              label: '設定を開く',
+              onPressed: () => Geolocator.openAppSettings(),
+            ),
+            duration: const Duration(seconds: 6),
+          ),
+        );
+        return;
+      case LocationIssue.permissionDenied:
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('位置情報が許可されなかったため、福岡市中心を表示しています。'),
+            duration: Duration(seconds: 4),
+          ),
+        );
+        return;
+      case LocationIssue.serviceDisabled:
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('端末の位置情報サービスがオフになっています。'),
+            duration: Duration(seconds: 4),
+          ),
+        );
+        return;
+      case LocationIssue.none:
+        break;
+    }
+
+    if (_commentsError != null) {
+      messenger.showSnackBar(SnackBar(content: Text(_commentsError!)));
+    }
+  }
+
+  /// 位置情報の許可を確認し、現在地を取得する。
+  /// 成功しなかった場合、理由(LocationIssue)を合わせて返す。
+  Future<({ll.LatLng? position, LocationIssue issue})> _getCurrentPosition() async {
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) return null;
+      if (!serviceEnabled) {
+        return (position: null, issue: LocationIssue.serviceDisabled);
+      }
 
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        return null;
+      if (permission == LocationPermission.deniedForever) {
+        return (position: null, issue: LocationIssue.permissionDeniedForever);
+      }
+      if (permission == LocationPermission.denied) {
+        return (position: null, issue: LocationIssue.permissionDenied);
       }
 
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
       );
-      return ll.LatLng(position.latitude, position.longitude);
+      return (
+        position: ll.LatLng(position.latitude, position.longitude),
+        issue: LocationIssue.none,
+      );
     } catch (_) {
-      return null;
+      return (position: null, issue: LocationIssue.serviceDisabled);
     }
   }
 
+  /// comments コレクションを全件取得し、現在地からの距離を計算して
+  /// nearbyRadiusMeters 以内のものだけ抽出、近い順に並べ替える。
   Future<List<NearbyComment>> _fetchNearbyComments(ll.LatLng center) async {
     final snapshot = await FirebaseFirestore.instance.collection('comments').get();
 
@@ -93,6 +178,7 @@ class _MapScreenState extends State<MapScreen> {
     return results;
   }
 
+  /// Haversine公式による2点間の距離計算（メートル）
   double _distanceMeters(ll.LatLng a, ll.LatLng b) {
     const earthRadius = 6371000.0;
     final dLat = _degToRad(b.latitude - a.latitude);
