@@ -1,14 +1,15 @@
-// lib/screens/map_screen.dart
-
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as ll;
 import 'package:geolocator/geolocator.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/nearby_alert_service.dart';
+import '../utils/geo_utils.dart';
 const double nearbyRadiusMeters = 1000;
+
 final ll.LatLng fukuokaFallback = ll.LatLng(33.5902, 130.4017);
 
 class MapScreen extends StatefulWidget {
@@ -23,6 +24,7 @@ class _MapScreenState extends State<MapScreen> {
   ll.LatLng _currentCenter = fukuokaFallback;
   List<NearbyComment> _nearbyComments = [];
   bool _isLoading = true;
+  final _alertService = NearbyAlertService();
 
   String _selectedCategoryFilter = 'All';
   final List<String> _categoryFilterList = [
@@ -155,7 +157,7 @@ class _MapScreenState extends State<MapScreen> {
       if (lat == null || lng == null) continue;
 
       final point = ll.LatLng(lat, lng);
-      final distance = _distanceMeters(center, point);
+      final distance = distanceMeters(center, point);
       if (distance <= nearbyRadiusMeters) {
         results.add(
           NearbyComment(
@@ -176,7 +178,7 @@ class _MapScreenState extends State<MapScreen> {
     results.sort((a, b) => a.distanceMeters.compareTo(b.distanceMeters));
     return results;
   }
-
+  
   double _distanceMeters(ll.LatLng a, ll.LatLng b) {
     const earthRadius = 6371000.0;
     final dLat = _degToRad(b.latitude - a.latitude);
@@ -791,7 +793,6 @@ class _MapScreenState extends State<MapScreen> {
       },
     );
   }
-
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
