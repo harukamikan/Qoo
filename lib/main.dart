@@ -1,7 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'screens/onboarding_screen.dart';
+import 'screens/map_screen.dart';
+import 'screens/tips_screen.dart';
 
-import 'app.dart';
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  runApp(const MyApp());
+}
 
-void main() {
-  runApp(const JamApp());
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Qoo',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+      ),
+      // home: const OnboardingScreen(),
+      // home: const TipsScreen(),
+      home: const MapScreen(), // ← ここを書き換えました
+    );
+  }
 }
