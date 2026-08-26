@@ -1,5 +1,5 @@
-name: jam_app
-description: "JAM - 旅先の口コミ・保存スポットを管理するアプリ"
+name: qoo
+description: "A new Flutter project."
 publish_to: "none"
 version: 1.0.0+1
 
