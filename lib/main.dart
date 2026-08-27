@@ -21,10 +21,10 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      // home: const OnboardingScreen(),
+      home: const OnboardingScreen(),
       // home: const TipsScreen(),
       // home: const MapPage(),
-      home: const HomeShell(),
+      // home: const HomeShell(),
     );
   }
 }
