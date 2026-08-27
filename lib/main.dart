@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'screens/home_shell.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/tips_screen.dart';
@@ -22,7 +23,8 @@ class MyApp extends StatelessWidget {
       ),
       // home: const OnboardingScreen(),
       // home: const TipsScreen(),
-      home: const MapScreen(), // ← ここを書き換えました
+      // home: const MapPage(),
+      home: const HomeShell(),
     );
   }
 }

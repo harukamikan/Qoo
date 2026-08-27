@@ -60,7 +60,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     // 地図画面へ遷移
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const MapScreen()),
+     MaterialPageRoute(builder: (context) => const MapPage()),
     );
   }
 
