@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'map_screen.dart';
+import 'home_shell.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
