@@ -13,6 +13,7 @@ import '../widgets/search_bar_widget.dart';
 import '../models/nearby_comment.dart';
 import '../widgets/current_location_dot.dart';
 import '../widgets/grouped_bubble_marker.dart';
+import '../widgets/report_dialog.dart';
 
 // main.dart に定義されている AppColors をそのまま参照する想定。
 // 参照できない場合は `import '../main.dart';` か、
@@ -852,7 +853,18 @@ class _MapPageState extends State<MapPage> {
                                           ),
                                         )
                                       else
-                                        const SizedBox.shrink(),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.flag_outlined,
+                                            size: 18,
+                                            color: AppColors.textGrey,
+                                          ),
+                                          tooltip: 'この投稿を通報',
+                                          onPressed: () => showReportDialog(
+                                            context,
+                                            title: c.placeName,
+                                          ),
+                                        ),
 
                                       Builder(
                                         builder: (context) {

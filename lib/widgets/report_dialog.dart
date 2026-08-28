@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// 通報用のダイアログを表示する汎用関数
 void showReportDialog(BuildContext context, {required String title}) {
@@ -55,11 +56,22 @@ void showReportDialog(BuildContext context, {required String title}) {
                   backgroundColor: Colors.redAccent,
                   foregroundColor: Colors.white,
                 ),
-                onPressed: () {
+                onPressed: () async {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('「$selectedReason」として通報を受け付けました')),
-                  );
+                  try {
+                    await FirebaseFirestore.instance.collection('reports').add({
+                      'title': title,
+                      'reason': selectedReason,
+                      'reported_at': FieldValue.serverTimestamp(),
+                    });
+                  } catch (e) {
+                    debugPrint('通報の保存に失敗: $e');
+                  }
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('「$selectedReason」として通報を受け付けました')),
+                    );
+                  }
                 },
                 child: const Text('通報する'),
               ),
