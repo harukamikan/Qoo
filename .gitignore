@@ -15,3 +15,4 @@ android/app/profile/
 android/app/release/
 ios/Pods/
 ios/.symlinks/
+.firebase/
