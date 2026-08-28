@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as ll;
@@ -8,23 +7,42 @@ import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/nearby_alert_service.dart';
 import '../utils/geo_utils.dart';
+import '../theme/app_colors.dart';
+
+// main.dart に定義されている AppColors をそのまま参照する想定。
+// 参照できない場合は `import '../main.dart';` か、
+// AppColors を独立ファイルに切り出して両方からimportしてください。
+
+/// 現在地からこの半径（メートル）以内の投稿だけを表示する。
 const double nearbyRadiusMeters = 1000;
 
 final ll.LatLng fukuokaFallback = ll.LatLng(33.5902, 130.4017);
 
-class MapScreen extends StatefulWidget {
-  const MapScreen({super.key});
-
-  @override
-  State<MapScreen> createState() => _MapScreenState();
+/// 現在地取得がなぜうまくいかなかったかを表す。成功時は none。
+enum LocationIssue {
+  none,
+  serviceDisabled, // 端末の位置情報サービス自体がオフ
+  permissionDenied, // 今回拒否された（次回また聞ける）
+  permissionDeniedForever, // 完全拒否（設定から手動で有効にするしかない）
 }
 
-class _MapScreenState extends State<MapScreen> {
+// Akitoさんの HomeShell の pages 配列に合わせて MapPage という名前にしている。
+// 元の MapScreen をそのままの中身で名前だけ変更したクラス。
+class MapPage extends StatefulWidget {
+  const MapPage({super.key});
+
+  @override
+  State<MapPage> createState() => _MapPageState();
+}
+
+class _MapPageState extends State<MapPage> {
   final MapController _mapController = MapController();
   ll.LatLng _currentCenter = fukuokaFallback;
   List<NearbyComment> _nearbyComments = [];
   bool _isLoading = true;
   final _alertService = NearbyAlertService();
+  LocationIssue _locationIssue = LocationIssue.none;
+  String? _commentsError;
 
   String _selectedCategoryFilter = 'All';
   final List<String> _categoryFilterList = [
@@ -46,6 +64,7 @@ class _MapScreenState extends State<MapScreen> {
     super.initState();
     _loadEverything();
     _startCarouselTimer();
+    _alertService.start();
   }
 
   void _startCarouselTimer() {
@@ -66,6 +85,7 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void dispose() {
     _carouselTimer?.cancel();
+    _alertService.stop();
     super.dispose();
   }
 
@@ -88,49 +108,116 @@ class _MapScreenState extends State<MapScreen> {
     return map;
   }
 
+  /// 現在地取得→Firestoreから投稿取得→距離計算、を一括で行う。
   Future<void> _loadEverything() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _commentsError = null;
+    });
 
     ll.LatLng center = fukuokaFallback;
+    LocationIssue locationIssue = LocationIssue.none;
     try {
-      final pos = await _getCurrentPosition().timeout(
+      final result = await _getCurrentPosition().timeout(
         const Duration(seconds: 2),
-        onTimeout: () => null,
+        onTimeout: () =>
+            (position: null, issue: LocationIssue.serviceDisabled),
       );
-      if (pos != null) {
-        center = pos;
+      if (result.position != null) {
+        center = result.position!;
       }
+      locationIssue = result.issue;
     } catch (_) {}
 
     List<NearbyComment> comments = [];
+    String? commentsError;
     try {
       comments = await _fetchNearbyComments(
         center,
       ).timeout(const Duration(milliseconds: 2500), onTimeout: () => []);
     } catch (e) {
       debugPrint('Firestore fetch error: $e');
+      // Firestore取得失敗時は、空のリストのまま進めて画面は表示する。
+      // 「ぐるぐる止まったまま」にならないよう、必ずここでエラーを吸収する。
+      commentsError = '投稿データを取得できませんでした。右下のボタンで再読み込みしてください。';
     }
 
     if (!mounted) return;
     setState(() {
       _currentCenter = center;
+      _locationIssue = locationIssue;
       _nearbyComments = comments;
+      _commentsError = commentsError;
       _isLoading = false;
     });
+
+    _showIssueMessageIfNeeded();
   }
 
-  Future<ll.LatLng?> _getCurrentPosition() async {
+  /// 位置情報・投稿取得で何か問題があれば、画面下部に一言メッセージを出す。
+  /// 優先度: 位置情報の問題 > 投稿取得の問題（両方あっても一つだけ出す）
+  void _showIssueMessageIfNeeded() {
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+
+    switch (_locationIssue) {
+      case LocationIssue.permissionDeniedForever:
+        messenger.showSnackBar(
+          SnackBar(
+            content: const Text('位置情報の許可がオフです。福岡市中心を表示しています。'),
+            action: SnackBarAction(
+              label: '設定を開く',
+              onPressed: () => Geolocator.openAppSettings(),
+            ),
+            duration: const Duration(seconds: 6),
+          ),
+        );
+        return;
+      case LocationIssue.permissionDenied:
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('位置情報が許可されなかったため、福岡市中心を表示しています。'),
+            duration: Duration(seconds: 4),
+          ),
+        );
+        return;
+      case LocationIssue.serviceDisabled:
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('端末の位置情報サービスがオフになっています。'),
+            duration: Duration(seconds: 4),
+          ),
+        );
+        return;
+      case LocationIssue.none:
+        break;
+    }
+
+    if (_commentsError != null) {
+      messenger.showSnackBar(SnackBar(content: Text(_commentsError!)));
+    }
+  }
+
+  /// 位置情報の許可を確認し、現在地を取得する。
+  /// 成功しなかった場合、理由(LocationIssue)を合わせて返す。
+  Future<({ll.LatLng? position, LocationIssue issue})>
+  _getCurrentPosition() async {
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) return null;
+      if (!serviceEnabled) {
+        return (position: null, issue: LocationIssue.serviceDisabled);
+      }
 
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        return null;
+      if (permission == LocationPermission.deniedForever) {
+        return (position: null, issue: LocationIssue.permissionDeniedForever);
+      }
+      if (permission == LocationPermission.denied) {
+        return (position: null, issue: LocationIssue.permissionDenied);
       }
 
       final position = await Geolocator.getCurrentPosition(
@@ -138,9 +225,12 @@ class _MapScreenState extends State<MapScreen> {
           accuracy: LocationAccuracy.low,
         ),
       );
-      return ll.LatLng(position.latitude, position.longitude);
+      return (
+        position: ll.LatLng(position.latitude, position.longitude),
+        issue: LocationIssue.none,
+      );
     } catch (_) {
-      return null;
+      return (position: null, issue: LocationIssue.serviceDisabled);
     }
   }
 
@@ -178,22 +268,6 @@ class _MapScreenState extends State<MapScreen> {
     results.sort((a, b) => a.distanceMeters.compareTo(b.distanceMeters));
     return results;
   }
-  
-  double _distanceMeters(ll.LatLng a, ll.LatLng b) {
-    const earthRadius = 6371000.0;
-    final dLat = _degToRad(b.latitude - a.latitude);
-    final dLng = _degToRad(b.longitude - a.longitude);
-    final lat1 = _degToRad(a.latitude);
-    final lat2 = _degToRad(b.latitude);
-
-    final h =
-        sin(dLat / 2) * sin(dLat / 2) +
-        sin(dLng / 2) * sin(dLng / 2) * cos(lat1) * cos(lat2);
-    final c = 2 * atan2(sqrt(h), sqrt(1 - h));
-    return earthRadius * c;
-  }
-
-  double _degToRad(double deg) => deg * (pi / 180);
 
   Color _getCategoryColor(String category) {
     switch (category) {
@@ -301,7 +375,7 @@ class _MapScreenState extends State<MapScreen> {
             return AlertDialog(
               title: const Row(
                 children: [
-                  Icon(Icons.edit_location_alt, color: Colors.teal),
+                  Icon(Icons.edit_location_alt, color: AppColors.primary),
                   SizedBox(width: 8),
                   Text(
                     'Tipsを投稿',
@@ -318,7 +392,7 @@ class _MapScreenState extends State<MapScreen> {
                       '📍 座標: ${targetPosition.latitude.toStringAsFixed(4)}, ${targetPosition.longitude.toStringAsFixed(4)}',
                       style: TextStyle(
                         fontSize: 11,
-                        color: Colors.teal[800],
+                        color: AppColors.navy,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -393,7 +467,7 @@ class _MapScreenState extends State<MapScreen> {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
+                    backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                   ),
                   onPressed: () async {
@@ -433,7 +507,7 @@ class _MapScreenState extends State<MapScreen> {
                       userCountry: '🇯🇵',
                       helpfulCount: 1,
                       position: targetPosition,
-                      distanceMeters: _distanceMeters(
+                      distanceMeters: distanceMeters(
                         _currentCenter,
                         targetPosition,
                       ),
@@ -470,7 +544,7 @@ class _MapScreenState extends State<MapScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -518,7 +592,7 @@ class _MapScreenState extends State<MapScreen> {
                               children: [
                                 const Icon(
                                   Icons.place,
-                                  color: Colors.redAccent,
+                                  color: AppColors.primary,
                                   size: 22,
                                 ),
                                 const SizedBox(width: 6),
@@ -532,6 +606,7 @@ class _MapScreenState extends State<MapScreen> {
                                         style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.bold,
+                                          color: AppColors.navy,
                                         ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -539,7 +614,7 @@ class _MapScreenState extends State<MapScreen> {
                                         'Tips一覧 (${currentList.length}件) • 約${targetSpot.distanceMeters.toStringAsFixed(0)}m',
                                         style: TextStyle(
                                           fontSize: 11,
-                                          color: Colors.grey[600],
+                                          color: AppColors.textGrey,
                                         ),
                                       ),
                                     ],
@@ -550,7 +625,7 @@ class _MapScreenState extends State<MapScreen> {
                           ),
                           ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.teal,
+                              backgroundColor: AppColors.primary,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 10,
@@ -614,7 +689,7 @@ class _MapScreenState extends State<MapScreen> {
                                               fontWeight: FontWeight.bold,
                                               fontSize: 13,
                                               color: isMyTip
-                                                  ? Colors.teal[800]
+                                                  ? AppColors.primary
                                                   : Colors.black87,
                                             ),
                                           ),
@@ -627,18 +702,18 @@ class _MapScreenState extends State<MapScreen> {
                                                     vertical: 1.5,
                                                   ),
                                               decoration: BoxDecoration(
-                                                color: Colors.teal.shade50,
+                                                color: AppColors.primaryFaint,
                                                 borderRadius:
                                                     BorderRadius.circular(4),
                                                 border: Border.all(
-                                                  color: Colors.teal.shade200,
+                                                  color: AppColors.primary,
                                                 ),
                                               ),
                                               child: const Text(
                                                 '自分',
                                                 style: TextStyle(
                                                   fontSize: 9.5,
-                                                  color: Colors.teal,
+                                                  color: AppColors.primary,
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
@@ -748,7 +823,7 @@ class _MapScreenState extends State<MapScreen> {
                                             vertical: 5,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: Colors.orange.withOpacity(
+                                            color: AppColors.primary.withOpacity(
                                               0.12,
                                             ),
                                             borderRadius: BorderRadius.circular(
@@ -760,7 +835,7 @@ class _MapScreenState extends State<MapScreen> {
                                               const Icon(
                                                 Icons.thumb_up_alt_rounded,
                                                 size: 14,
-                                                color: Colors.orange,
+                                                color: AppColors.primary,
                                               ),
                                               const SizedBox(width: 4),
                                               Text(
@@ -768,7 +843,7 @@ class _MapScreenState extends State<MapScreen> {
                                                 style: const TextStyle(
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.bold,
-                                                  color: Colors.orange,
+                                                  color: AppColors.primary,
                                                 ),
                                               ),
                                             ],
@@ -793,6 +868,31 @@ class _MapScreenState extends State<MapScreen> {
       },
     );
   }
+
+  // --- Akitoさんの検索バー相当（見た目だけ流用。タップ時の動きは今のところ未実装） ---
+  Widget _mapSearch() => Container(
+    margin: const EdgeInsets.all(20),
+    padding: const EdgeInsets.symmetric(horizontal: 18),
+    height: 70,
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: .94),
+      borderRadius: BorderRadius.circular(24),
+      boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 12)],
+    ),
+    child: const Row(
+      children: [
+        Icon(Icons.menu, color: AppColors.textGrey),
+        SizedBox(width: 22),
+        Text('目的地を検索...', style: TextStyle(fontSize: 24, color: AppColors.textGrey)),
+        Spacer(),
+        CircleAvatar(
+          backgroundColor: AppColors.primaryLight,
+          child: Icon(Icons.person, color: AppColors.navy),
+        ),
+      ],
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -854,36 +954,39 @@ class _MapScreenState extends State<MapScreen> {
             ],
           ),
 
-          // 上部：カテゴリフィルタ用チップバー
+          // 上部：Akitoさんの検索バー
+          _mapSearch(),
+
+          // 検索バーの下：カテゴリフィルタ用チップバー（Akitoさんの見た目＋はるかの中身）
           Positioned(
-            top: 16,
-            left: 12,
-            right: 12,
+            top: 96,
+            left: 0,
+            right: 0,
             child: SizedBox(
-              height: 40,
+              height: 66,
               child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 scrollDirection: Axis.horizontal,
                 itemCount: _categoryFilterList.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
                 itemBuilder: (context, index) {
                   final cat = _categoryFilterList[index];
                   final isSelected = _selectedCategoryFilter == cat;
                   final catColor = cat == 'All'
-                      ? Colors.teal
+                      ? AppColors.navy
                       : _getCategoryColor(cat);
 
                   return ChoiceChip(
                     label: Text(
                       cat == 'All' ? '🌐 すべて' : cat,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: isSelected ? Colors.white : Colors.black87,
-                      ),
+                      style: const TextStyle(fontSize: 16),
                     ),
                     selected: isSelected,
                     selectedColor: catColor,
-                    backgroundColor: Colors.white.withOpacity(0.92),
+                    labelStyle: TextStyle(
+                      color: isSelected ? Colors.white : AppColors.textGrey,
+                    ),
+                    backgroundColor: Colors.white.withValues(alpha: .92),
                     elevation: isSelected ? 3 : 1,
                     side: BorderSide(
                       color: isSelected ? catColor : Colors.grey.shade300,
@@ -902,16 +1005,16 @@ class _MapScreenState extends State<MapScreen> {
             ),
           ),
 
-          // 右上：ズームボタン
+          // 右下：ズームボタン（Akitoさんの右下寄せ配置に合わせる）
           Positioned(
-            top: 70,
-            right: 16,
+            right: 24,
+            bottom: 165,
             child: Column(
               children: [
                 FloatingActionButton.small(
                   heroTag: 'zoom_in_btn',
                   backgroundColor: Colors.white,
-                  foregroundColor: Colors.black87,
+                  foregroundColor: AppColors.textGrey,
                   onPressed: () {
                     final zoom = _mapController.camera.zoom;
                     if (zoom < 17.0) {
@@ -923,11 +1026,11 @@ class _MapScreenState extends State<MapScreen> {
                   },
                   child: const Icon(Icons.add),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 FloatingActionButton.small(
                   heroTag: 'zoom_out_btn',
                   backgroundColor: Colors.white,
-                  foregroundColor: Colors.black87,
+                  foregroundColor: AppColors.textGrey,
                   onPressed: () {
                     final zoom = _mapController.camera.zoom;
                     if (zoom > 4.0) {
@@ -950,6 +1053,8 @@ class _MapScreenState extends State<MapScreen> {
         children: [
           FloatingActionButton(
             heroTag: 'refresh_btn',
+            backgroundColor: Colors.white,
+            foregroundColor: AppColors.textGrey,
             onPressed: _loadEverything,
             tooltip: '再読み込み',
             child: const Icon(Icons.my_location),
@@ -957,7 +1062,7 @@ class _MapScreenState extends State<MapScreen> {
           const SizedBox(height: 12),
           FloatingActionButton.extended(
             heroTag: 'post_tips_btn',
-            backgroundColor: Colors.teal,
+            backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
             onPressed: () =>
                 _showPostTipsDialog(targetPosition: _currentCenter),
@@ -1151,7 +1256,7 @@ class _GroupedBubbleMarker extends StatelessWidget {
                           const Icon(
                             Icons.thumb_up_alt_rounded,
                             size: 10,
-                            color: Colors.orange,
+                            color: AppColors.primary,
                           ),
                           const SizedBox(width: 2),
                           Text(
@@ -1159,16 +1264,13 @@ class _GroupedBubbleMarker extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
-                              color: Colors.orange,
+                              color: AppColors.primary,
                             ),
                           ),
                           const SizedBox(width: 4),
                           const Text(
                             '一覧>',
-                            style: TextStyle(
-                              fontSize: 8,
-                              color: Colors.blueGrey,
-                            ),
+                            style: TextStyle(fontSize: 8, color: AppColors.navy),
                           ),
                         ],
                       ),
