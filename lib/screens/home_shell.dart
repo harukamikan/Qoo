@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import 'map_screen.dart'; // 本物のMapPage（Firestore連携・現在地・Tips投稿など）
+import 'gacha/gacha_screen.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -14,7 +15,7 @@ class _HomeShellState extends State<HomeShell> {
   // 地図タブだけ本物のMapPage、他の4つはAkitoさんが作ったモック画面（中身は今のところ空に近い）
   final pages = const [
     MapPage(),
-    SearchPage(),
+    GachaScreen(),
     ReviewFormPage(),
     SavedPage(),
     ProfilePage(),
@@ -32,7 +33,10 @@ class _HomeShellState extends State<HomeShell> {
                 icon: Icon(Icons.map_outlined),
                 selectedIcon: Icon(Icons.map),
                 label: '地図'),
-            NavigationDestination(icon: Icon(Icons.search), label: '検索'),
+            NavigationDestination(
+                icon: Icon(Icons.casino_outlined),
+                selectedIcon: Icon(Icons.casino),
+                label: 'ガチャ'),
             NavigationDestination(
                 icon: Icon(Icons.add_circle_outline),
                 selectedIcon: Icon(Icons.add_circle),

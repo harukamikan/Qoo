@@ -15,7 +15,7 @@ class NavItemData {
 }
 
 /// 5タブ共通のボトムナビゲーションバー。
-/// 「地図・検索・投稿・保存・プロフィール」に対応する。
+/// 「地図・ガチャ・投稿・保存・プロフィール」に対応する。
 class JamBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -33,9 +33,9 @@ class JamBottomNavBar extends StatelessWidget {
       label: '地図',
     ),
     NavItemData(
-      icon: Icons.search,
-      activeIcon: Icons.search,
-      label: '検索',
+      icon: Icons.casino_outlined,
+      activeIcon: Icons.casino,
+      label: 'ガチャ',
     ),
     NavItemData(
       icon: Icons.add_circle_outline,
