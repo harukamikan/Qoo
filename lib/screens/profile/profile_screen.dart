@@ -159,8 +159,8 @@ class ProfileScreen extends StatelessWidget {
                         children: [
                           CircleAvatar(
                             radius: 46,
-                            backgroundColor:
-                                kAvatarColors[data.avatarSeed % kAvatarColors.length],
+                            backgroundColor: kAvatarColors[
+                                data.avatarSeed % kAvatarColors.length],
                             child: Text(
                               data.profileName.isNotEmpty
                                   ? data.profileName.substring(0, 1)

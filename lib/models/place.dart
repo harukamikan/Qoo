@@ -63,9 +63,8 @@ class Place {
         footerLabel: json['footerLabel'] as String,
         footerIconKey: json['footerIconKey'] as String,
         photoIconKey: json['photoIconKey'] as String,
-        gradientColors: (json['gradientColors'] as List)
-            .map((e) => e as int)
-            .toList(),
+        gradientColors:
+            (json['gradientColors'] as List).map((e) => e as int).toList(),
         isSaved: json['isSaved'] as bool,
         lat: (json['lat'] as num).toDouble(),
         lng: (json['lng'] as num).toDouble(),

@@ -15,7 +15,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _userLanguage = '日本語';
 
   // 選択肢リスト
-  final List<String> _nationalities = ['日本 🇯🇵', 'アメリカ 🇺🇸', '韓国 🇰🇷', '中国 🇨🇳', 'その他'];
+  final List<String> _nationalities = [
+    '日本 🇯🇵',
+    'アメリカ 🇺🇸',
+    '韓国 🇰🇷',
+    '中国 🇨🇳',
+    'その他'
+  ];
   final List<String> _languages = ['日本語', 'English', '한국어', '中文'];
 
   // 国籍変更ダイアログ
@@ -106,7 +112,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             // プロフィール詳細カード（タップで変更可能）
             Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: Column(
@@ -117,7 +124,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(_userNationality, style: const TextStyle(fontWeight: FontWeight.w500)),
+                          Text(_userNationality,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w500)),
                           const Icon(Icons.chevron_right, color: Colors.grey),
                         ],
                       ),
@@ -130,7 +139,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(_userLanguage, style: const TextStyle(fontWeight: FontWeight.w500)),
+                          Text(_userLanguage,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w500)),
                           const Icon(Icons.chevron_right, color: Colors.grey),
                         ],
                       ),
@@ -144,17 +155,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             // メニュー一覧（保存機能への導線）
             Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.bookmark, color: Colors.blueAccent),
+                    leading:
+                        const Icon(Icons.bookmark, color: Colors.blueAccent),
                     title: const Text('保存したスポット・口コミ'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const SavedSpotsScreen()),
+                        MaterialPageRoute(
+                            builder: (context) => const SavedSpotsScreen()),
                       );
                     },
                   ),

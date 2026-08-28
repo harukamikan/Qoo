@@ -75,15 +75,13 @@ class ReviewDetailScreen extends StatelessWidget {
                           ),
                         ),
                         Padding(
-                          padding:
-                              const EdgeInsets.fromLTRB(20, 14, 20, 6),
+                          padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       place.name,
@@ -153,15 +151,15 @@ class ReviewDetailScreen extends StatelessWidget {
                                     child: Text(
                                       'まだ口コミがありません。最初の口コミを投稿してみましょう。',
                                       textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                          color: AppColors.textGrey),
+                                      style:
+                                          TextStyle(color: AppColors.textGrey),
                                     ),
                                   ),
                                 )
                               : ListView.builder(
                                   controller: scrollController,
-                                  padding: const EdgeInsets.fromLTRB(
-                                      20, 16, 20, 24),
+                                  padding:
+                                      const EdgeInsets.fromLTRB(20, 16, 20, 24),
                                   itemCount: reviews.length,
                                   itemBuilder: (context, index) {
                                     final review = reviews[index];

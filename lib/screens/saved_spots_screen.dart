@@ -42,7 +42,8 @@ class _SavedSpotsScreenState extends State<SavedSpotsScreen> {
               itemBuilder: (context, index) {
                 final spot = _savedSpots[index];
                 return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: Colors.blue.shade100,
@@ -77,7 +78,8 @@ class _SavedSpotsScreenState extends State<SavedSpotsScreen> {
                       ],
                     ),
                     trailing: IconButton(
-                      icon: const Icon(Icons.bookmark_remove, color: Colors.redAccent),
+                      icon: const Icon(Icons.bookmark_remove,
+                          color: Colors.redAccent),
                       onPressed: () {
                         setState(() {
                           _savedSpots.removeAt(index);

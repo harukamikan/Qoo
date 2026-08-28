@@ -17,12 +17,12 @@ class MapBackgroundPainter extends CustomPainter {
     // 緑地（公園）ブロック
     final parkPaint = Paint()..color = const Color(0xFFCBDDBB);
     final parkRects = [
-      Rect.fromLTWH(size.width * 0.05, size.height * 0.10,
-          size.width * 0.22, size.height * 0.12),
-      Rect.fromLTWH(size.width * 0.62, size.height * 0.55,
-          size.width * 0.30, size.height * 0.16),
-      Rect.fromLTWH(size.width * 0.10, size.height * 0.68,
-          size.width * 0.18, size.height * 0.10),
+      Rect.fromLTWH(size.width * 0.05, size.height * 0.10, size.width * 0.22,
+          size.height * 0.12),
+      Rect.fromLTWH(size.width * 0.62, size.height * 0.55, size.width * 0.30,
+          size.height * 0.16),
+      Rect.fromLTWH(size.width * 0.10, size.height * 0.68, size.width * 0.18,
+          size.height * 0.10),
     ];
     for (final r in parkRects) {
       canvas.drawRRect(
@@ -45,18 +45,14 @@ class MapBackgroundPainter extends CustomPainter {
     final horizontalYs = List.generate(
         5, (i) => size.height * (0.1 + i * 0.2) + random.nextDouble() * 10);
     for (final y in horizontalYs) {
-      canvas.drawLine(
-          Offset(0, y), Offset(size.width, y + 6), mainRoadBorder);
-      canvas.drawLine(
-          Offset(0, y), Offset(size.width, y + 6), mainRoadPaint);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y + 6), mainRoadBorder);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y + 6), mainRoadPaint);
     }
     final verticalXs = List.generate(
         4, (i) => size.width * (0.15 + i * 0.28) + random.nextDouble() * 10);
     for (final x in verticalXs) {
-      canvas.drawLine(
-          Offset(x, 0), Offset(x + 4, size.height), mainRoadBorder);
-      canvas.drawLine(
-          Offset(x, 0), Offset(x + 4, size.height), mainRoadPaint);
+      canvas.drawLine(Offset(x, 0), Offset(x + 4, size.height), mainRoadBorder);
+      canvas.drawLine(Offset(x, 0), Offset(x + 4, size.height), mainRoadPaint);
     }
 
     // 細街路（薄い線）
@@ -79,8 +75,8 @@ class MapBackgroundPainter extends CustomPainter {
       ..moveTo(0, size.height * 0.42)
       ..quadraticBezierTo(size.width * 0.25, size.height * 0.30,
           size.width * 0.45, size.height * 0.48)
-      ..quadraticBezierTo(size.width * 0.65, size.height * 0.66,
-          size.width, size.height * 0.5);
+      ..quadraticBezierTo(
+          size.width * 0.65, size.height * 0.66, size.width, size.height * 0.5);
     canvas.drawPath(riverPath, riverPaint);
   }
 

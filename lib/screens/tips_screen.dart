@@ -115,8 +115,7 @@ class _TipsScreenState extends State<TipsScreen> {
     const double r = 6371000;
     final dLat = (lat2 - lat1) * (pi / 180.0);
     final dLon = (lon2 - lon1) * (pi / 180.0);
-    final a =
-        sin(dLat / 2) * sin(dLat / 2) +
+    final a = sin(dLat / 2) * sin(dLat / 2) +
         cos(lat1 * (pi / 180.0)) *
             cos(lat2 * (pi / 180.0)) *
             sin(dLon / 2) *
@@ -313,9 +312,9 @@ class _TipsScreenState extends State<TipsScreen> {
                                             Container(
                                               padding:
                                                   const EdgeInsets.symmetric(
-                                                    horizontal: 6,
-                                                    vertical: 2,
-                                                  ),
+                                                horizontal: 6,
+                                                vertical: 2,
+                                              ),
                                               decoration: BoxDecoration(
                                                 color: Colors.amber.shade100,
                                                 borderRadius:
@@ -543,8 +542,8 @@ class _TipsScreenState extends State<TipsScreen> {
                     if (textController.text.trim().isEmpty) return;
 
                     final newReview = Review(
-                      commentId: DateTime.now().millisecondsSinceEpoch
-                          .toString(),
+                      commentId:
+                          DateTime.now().millisecondsSinceEpoch.toString(),
                       spotName: spotName,
                       userId: 'current_user',
                       userName: 'You',
@@ -833,9 +832,8 @@ class _TipsScreenState extends State<TipsScreen> {
     );
 
     final rawIndex = _carouselIndices[locKey] ?? 0;
-    final currentIndex = reviewsInLoc.isEmpty
-        ? 0
-        : rawIndex % reviewsInLoc.length;
+    final currentIndex =
+        reviewsInLoc.isEmpty ? 0 : rawIndex % reviewsInLoc.length;
     final activeReview = reviewsInLoc[currentIndex];
 
     final catColor = _getCategoryColor(activeReview.category);
@@ -927,11 +925,11 @@ class _TipsScreenState extends State<TipsScreen> {
                       switchOutCurve: Curves.easeOut,
                       transitionBuilder:
                           (Widget child, Animation<double> animation) {
-                            return FadeTransition(
-                              opacity: animation,
-                              child: child,
-                            );
-                          },
+                        return FadeTransition(
+                          opacity: animation,
+                          child: child,
+                        );
+                      },
                       child: Column(
                         key: ValueKey<String>(activeReview.commentId),
                         crossAxisAlignment: CrossAxisAlignment.start,

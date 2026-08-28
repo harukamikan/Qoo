@@ -87,7 +87,8 @@ class StorageService {
     await _prefs?.setString(_kLanguageRegion, '$language|$region');
   }
 
-  String loadProfileName() => _prefs?.getString(_kProfileName) ?? 'Traveler Explorer';
+  String loadProfileName() =>
+      _prefs?.getString(_kProfileName) ?? 'Traveler Explorer';
 
   Future<void> saveProfileName(String value) async {
     await _prefs?.setString(_kProfileName, value);

@@ -33,7 +33,8 @@ class AppSettingsScreen extends StatelessWidget {
                       data.setAlertEnabled(v);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(v ? '100mアラートをオンにしました' : '100mアラートをオフにしました'),
+                          content:
+                              Text(v ? '100mアラートをオンにしました' : '100mアラートをオフにしました'),
                         ),
                       );
                     },
@@ -48,7 +49,8 @@ class AppSettingsScreen extends StatelessWidget {
                 OutlinedButton.icon(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('🔔 テスト通知：近くに保存済みスポットがあります')),
+                      const SnackBar(
+                          content: Text('🔔 テスト通知：近くに保存済みスポットがあります')),
                     );
                   },
                   icon: const Icon(Icons.notifications_active_outlined),

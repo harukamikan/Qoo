@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/nearby_alert_service.dart';
 import '../utils/geo_utils.dart';
 import '../theme/app_colors.dart';
+import '../widgets/search_bar_widget.dart';
 
 // main.dart に定義されている AppColors をそのまま参照する想定。
 // 参照できない場合は `import '../main.dart';` か、
@@ -46,6 +47,7 @@ class _MapPageState extends State<MapPage> {
   String? _commentsError;
 
   String _selectedCategoryFilter = 'All';
+  String _searchKeyword = '';
   final List<String> _categoryFilterList = [
     'All',
     'Food',
@@ -59,7 +61,7 @@ class _MapPageState extends State<MapPage> {
 
   final Map<String, int> _carouselIndices = {};
   Timer? _carouselTimer;
-    // --- Helpfulボタンの二重カウント防止 ---
+  // --- Helpfulボタンの二重カウント防止 ---
   // このアプリにはまだユーザー認証が無いため、「誰が押したか」ではなく
   // 「この端末で、このTips(comment.id)に自分は既に押したか」を
   // SharedPreferencesに保存して、トグル（押す/取り消す）できるようにする。
@@ -99,8 +101,7 @@ class _MapPageState extends State<MapPage> {
     FirebaseFirestore.instance
         .collection('comments')
         .doc(c.id)
-        .update({'helpful_count': c.helpfulCount})
-        .catchError((_) {});
+        .update({'helpful_count': c.helpfulCount}).catchError((_) {});
   }
 
   @override
@@ -139,10 +140,18 @@ class _MapPageState extends State<MapPage> {
 
   Map<String, List<NearbyComment>> _getGroupedComments() {
     final Map<String, List<NearbyComment>> map = {};
+    final keyword = _searchKeyword.trim().toLowerCase();
     for (final c in _nearbyComments) {
       if (_selectedCategoryFilter != 'All' &&
           c.category != _selectedCategoryFilter) {
         continue;
+      }
+      if (keyword.isNotEmpty) {
+        final matchesPlaceName = c.placeName.toLowerCase().contains(keyword);
+        final matchesContent = c.content.toLowerCase().contains(keyword);
+        if (!matchesPlaceName && !matchesContent) {
+          continue;
+        }
       }
       final key = _toLocationKey(c.position);
       map.putIfAbsent(key, () => []).add(c);
@@ -863,7 +872,8 @@ class _MapPageState extends State<MapPage> {
                                             borderRadius:
                                                 BorderRadius.circular(12),
                                             child: Container(
-                                              padding: const EdgeInsets.symmetric(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
                                                 horizontal: 10,
                                                 vertical: 5,
                                               ),
@@ -877,7 +887,8 @@ class _MapPageState extends State<MapPage> {
                                                     BorderRadius.circular(12),
                                                 border: isHelpfulByMe
                                                     ? Border.all(
-                                                        color: AppColors.primary,
+                                                        color:
+                                                            AppColors.primary,
                                                         width: 1,
                                                       )
                                                     : null,
@@ -886,7 +897,8 @@ class _MapPageState extends State<MapPage> {
                                                 children: [
                                                   Icon(
                                                     isHelpfulByMe
-                                                        ? Icons.thumb_up_alt_rounded
+                                                        ? Icons
+                                                            .thumb_up_alt_rounded
                                                         : Icons
                                                             .thumb_up_alt_outlined,
                                                     size: 14,
@@ -897,7 +909,8 @@ class _MapPageState extends State<MapPage> {
                                                     'Helpful (${c.helpfulCount})',
                                                     style: const TextStyle(
                                                       fontSize: 12,
-                                                      fontWeight: FontWeight.bold,
+                                                      fontWeight:
+                                                          FontWeight.bold,
                                                       color: AppColors.primary,
                                                     ),
                                                   ),
@@ -926,28 +939,20 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-  // --- Akitoさんの検索バー相当（見た目だけ流用。タップ時の動きは今のところ未実装） ---
   Widget _mapSearch() => Container(
-        margin: const EdgeInsets.all(20),
-        padding: const EdgeInsets.symmetric(horizontal: 18),
-        height: 70,
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: .94),
           borderRadius: BorderRadius.circular(24),
           boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 12)],
         ),
-        child: const Row(
-          children: [
-            Icon(Icons.menu, color: AppColors.textGrey),
-            SizedBox(width: 22),
-            Text('目的地を検索...',
-                style: TextStyle(fontSize: 24, color: AppColors.textGrey)),
-            Spacer(),
-            CircleAvatar(
-              backgroundColor: AppColors.primaryLight,
-              child: Icon(Icons.person, color: AppColors.navy),
-            ),
-          ],
+        child: SearchBarWidget(
+          showCategoryChips: false, // カテゴリチップは下の既存フィルタで表示済み
+          onSearchChanged: (query, category) {
+            setState(() {
+              _searchKeyword = query;
+            });
+          },
         ),
       );
 
