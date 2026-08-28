@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart' as ll;
 import 'package:geolocator/geolocator.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/nearby_alert_service.dart';
 import '../utils/geo_utils.dart';
 import '../theme/app_colors.dart';
@@ -58,11 +59,55 @@ class _MapPageState extends State<MapPage> {
 
   final Map<String, int> _carouselIndices = {};
   Timer? _carouselTimer;
+    // --- Helpfulボタンの二重カウント防止 ---
+  // このアプリにはまだユーザー認証が無いため、「誰が押したか」ではなく
+  // 「この端末で、このTips(comment.id)に自分は既に押したか」を
+  // SharedPreferencesに保存して、トグル（押す/取り消す）できるようにする。
+  static const String _helpfulPrefsKey = 'helpful_marked_comment_ids';
+  Set<String> _myHelpfulIds = {};
+
+  Future<void> _loadMyHelpfulIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = prefs.getStringList(_helpfulPrefsKey) ?? [];
+    if (!mounted) return;
+    setState(() {
+      _myHelpfulIds = list.toSet();
+    });
+  }
+
+  Future<void> _saveMyHelpfulIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_helpfulPrefsKey, _myHelpfulIds.toList());
+  }
+
+  bool _isHelpfulByMe(String commentId) => _myHelpfulIds.contains(commentId);
+
+  /// Helpfulボタンのトグル処理（マップ上の吹き出し・一覧モーダル共通）。
+  void _toggleHelpful(NearbyComment c, {VoidCallback? onLocalUpdate}) {
+    final wasHelpful = _myHelpfulIds.contains(c.id);
+    setState(() {
+      if (wasHelpful) {
+        c.helpfulCount = c.helpfulCount > 0 ? c.helpfulCount - 1 : 0;
+        _myHelpfulIds.remove(c.id);
+      } else {
+        c.helpfulCount++;
+        _myHelpfulIds.add(c.id);
+      }
+    });
+    onLocalUpdate?.call();
+    _saveMyHelpfulIds();
+    FirebaseFirestore.instance
+        .collection('comments')
+        .doc(c.id)
+        .update({'helpful_count': c.helpfulCount})
+        .catchError((_) {});
+  }
 
   @override
   void initState() {
     super.initState();
     _loadEverything();
+    _loadMyHelpfulIds();
     _startCarouselTimer();
     _alertService.start();
   }
@@ -120,8 +165,7 @@ class _MapPageState extends State<MapPage> {
     try {
       final result = await _getCurrentPosition().timeout(
         const Duration(seconds: 2),
-        onTimeout: () =>
-            (position: null, issue: LocationIssue.serviceDisabled),
+        onTimeout: () => (position: null, issue: LocationIssue.serviceDisabled),
       );
       if (result.position != null) {
         center = result.position!;
@@ -202,7 +246,7 @@ class _MapPageState extends State<MapPage> {
   /// 位置情報の許可を確認し、現在地を取得する。
   /// 成功しなかった場合、理由(LocationIssue)を合わせて返す。
   Future<({ll.LatLng? position, LocationIssue issue})>
-  _getCurrentPosition() async {
+      _getCurrentPosition() async {
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
@@ -235,9 +279,8 @@ class _MapPageState extends State<MapPage> {
   }
 
   Future<List<NearbyComment>> _fetchNearbyComments(ll.LatLng center) async {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('comments')
-        .get();
+    final snapshot =
+        await FirebaseFirestore.instance.collection('comments').get();
 
     final results = <NearbyComment>[];
     for (final doc in snapshot.docs) {
@@ -477,22 +520,22 @@ class _MapPageState extends State<MapPage> {
                         ? 'おすすめスポット'
                         : placeController.text.trim();
 
-                    String newDocId = DateTime.now().millisecondsSinceEpoch
-                        .toString();
+                    String newDocId =
+                        DateTime.now().millisecondsSinceEpoch.toString();
                     try {
                       final ref = await FirebaseFirestore.instance
                           .collection('comments')
                           .add({
-                            'place_name': placeName,
-                            'category': selectedCategory,
-                            'content': contentController.text.trim(),
-                            'latitude': targetPosition.latitude,
-                            'longitude': targetPosition.longitude,
-                            'user_name': 'You',
-                            'user_country': '🇯🇵',
-                            'helpful_count': 1,
-                            'created_at': FieldValue.serverTimestamp(),
-                          });
+                        'place_name': placeName,
+                        'category': selectedCategory,
+                        'content': contentController.text.trim(),
+                        'latitude': targetPosition.latitude,
+                        'longitude': targetPosition.longitude,
+                        'user_name': 'You',
+                        'user_country': '🇯🇵',
+                        'helpful_count': 1,
+                        'created_at': FieldValue.serverTimestamp(),
+                      });
                       newDocId = ref.id;
                     } catch (e) {
                       debugPrint('Firebase save note: $e');
@@ -698,9 +741,9 @@ class _MapPageState extends State<MapPage> {
                                             Container(
                                               padding:
                                                   const EdgeInsets.symmetric(
-                                                    horizontal: 5,
-                                                    vertical: 1.5,
-                                                  ),
+                                                horizontal: 5,
+                                                vertical: 1.5,
+                                              ),
                                               decoration: BoxDecoration(
                                                 color: AppColors.primaryFaint,
                                                 borderRadius:
@@ -725,9 +768,9 @@ class _MapPageState extends State<MapPage> {
                                             Container(
                                               padding:
                                                   const EdgeInsets.symmetric(
-                                                    horizontal: 5,
-                                                    vertical: 1.5,
-                                                  ),
+                                                horizontal: 5,
+                                                vertical: 1.5,
+                                              ),
                                               decoration: BoxDecoration(
                                                 color: Colors.amber.shade100,
                                                 borderRadius:
@@ -799,56 +842,70 @@ class _MapPageState extends State<MapPage> {
                                       else
                                         const SizedBox.shrink(),
 
-                                      InkWell(
-                                        onTap: () {
-                                          setModalState(() => c.helpfulCount++);
-                                          setState(() {
-                                            currentList.sort(
-                                              (a, b) => b.helpfulCount
-                                                  .compareTo(a.helpfulCount),
-                                            );
-                                          });
-                                          FirebaseFirestore.instance
-                                              .collection('comments')
-                                              .doc(c.id)
-                                              .update({
-                                                'helpful_count': c.helpfulCount,
-                                              })
-                                              .catchError((_) {});
+                                      Builder(
+                                        builder: (context) {
+                                          final isHelpfulByMe =
+                                              _isHelpfulByMe(c.id);
+                                          return InkWell(
+                                            onTap: () {
+                                              _toggleHelpful(
+                                                c,
+                                                onLocalUpdate: () {
+                                                  setModalState(() {});
+                                                  currentList.sort(
+                                                    (a, b) => b.helpfulCount
+                                                        .compareTo(
+                                                            a.helpfulCount),
+                                                  );
+                                                },
+                                              );
+                                            },
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 10,
+                                                vertical: 5,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: isHelpfulByMe
+                                                    ? AppColors.primary
+                                                        .withOpacity(0.28)
+                                                    : AppColors.primary
+                                                        .withOpacity(0.12),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                border: isHelpfulByMe
+                                                    ? Border.all(
+                                                        color: AppColors.primary,
+                                                        width: 1,
+                                                      )
+                                                    : null,
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  Icon(
+                                                    isHelpfulByMe
+                                                        ? Icons.thumb_up_alt_rounded
+                                                        : Icons
+                                                            .thumb_up_alt_outlined,
+                                                    size: 14,
+                                                    color: AppColors.primary,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Text(
+                                                    'Helpful (${c.helpfulCount})',
+                                                    style: const TextStyle(
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: AppColors.primary,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          );
                                         },
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 5,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.primary.withOpacity(
-                                              0.12,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              const Icon(
-                                                Icons.thumb_up_alt_rounded,
-                                                size: 14,
-                                                color: AppColors.primary,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                'Helpful (${c.helpfulCount})',
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: AppColors.primary,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
                                       ),
                                     ],
                                   ),
@@ -871,27 +928,28 @@ class _MapPageState extends State<MapPage> {
 
   // --- Akitoさんの検索バー相当（見た目だけ流用。タップ時の動きは今のところ未実装） ---
   Widget _mapSearch() => Container(
-    margin: const EdgeInsets.all(20),
-    padding: const EdgeInsets.symmetric(horizontal: 18),
-    height: 70,
-    decoration: BoxDecoration(
-      color: Colors.white.withValues(alpha: .94),
-      borderRadius: BorderRadius.circular(24),
-      boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 12)],
-    ),
-    child: const Row(
-      children: [
-        Icon(Icons.menu, color: AppColors.textGrey),
-        SizedBox(width: 22),
-        Text('目的地を検索...', style: TextStyle(fontSize: 24, color: AppColors.textGrey)),
-        Spacer(),
-        CircleAvatar(
-          backgroundColor: AppColors.primaryLight,
-          child: Icon(Icons.person, color: AppColors.navy),
+        margin: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 18),
+        height: 70,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: .94),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 12)],
         ),
-      ],
-    ),
-  );
+        child: const Row(
+          children: [
+            Icon(Icons.menu, color: AppColors.textGrey),
+            SizedBox(width: 22),
+            Text('目的地を検索...',
+                style: TextStyle(fontSize: 24, color: AppColors.textGrey)),
+            Spacer(),
+            CircleAvatar(
+              backgroundColor: AppColors.primaryLight,
+              child: Icon(Icons.person, color: AppColors.navy),
+            ),
+          ],
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -945,6 +1003,8 @@ class _MapPageState extends State<MapPage> {
                           locKey: entry.key,
                           carouselIndex: _carouselIndices[entry.key] ?? 0,
                           getCategoryColor: _getCategoryColor,
+                          isHelpfulByMe: _isHelpfulByMe,
+                          onHelpfulTap: (c) => _toggleHelpful(c),
                           onTap: () =>
                               _showLocationTipsModal(context, entry.value),
                         ),
@@ -972,9 +1032,8 @@ class _MapPageState extends State<MapPage> {
                 itemBuilder: (context, index) {
                   final cat = _categoryFilterList[index];
                   final isSelected = _selectedCategoryFilter == cat;
-                  final catColor = cat == 'All'
-                      ? AppColors.navy
-                      : _getCategoryColor(cat);
+                  final catColor =
+                      cat == 'All' ? AppColors.navy : _getCategoryColor(cat);
 
                   return ChoiceChip(
                     label: Text(
@@ -1121,6 +1180,8 @@ class _GroupedBubbleMarker extends StatelessWidget {
   final int carouselIndex;
   final Color Function(String) getCategoryColor;
   final VoidCallback onTap;
+  final bool Function(String) isHelpfulByMe;
+  final void Function(NearbyComment) onHelpfulTap;
 
   const _GroupedBubbleMarker({
     required this.comments,
@@ -1128,6 +1189,8 @@ class _GroupedBubbleMarker extends StatelessWidget {
     required this.carouselIndex,
     required this.getCategoryColor,
     required this.onTap,
+    required this.isHelpfulByMe,
+    required this.onHelpfulTap,
   });
 
   @override
@@ -1253,24 +1316,34 @@ class _GroupedBubbleMarker extends StatelessWidget {
                       ),
                       Row(
                         children: [
-                          const Icon(
-                            Icons.thumb_up_alt_rounded,
-                            size: 10,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            '${activeComment.helpfulCount}',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
+                          GestureDetector(
+                            onTap: () => onHelpfulTap(activeComment),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  isHelpfulByMe(activeComment.id)
+                                      ? Icons.thumb_up_alt_rounded
+                                      : Icons.thumb_up_alt_outlined,
+                                  size: 10,
+                                  color: AppColors.primary,
+                                ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '${activeComment.helpfulCount}',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(width: 4),
                           const Text(
                             '一覧>',
-                            style: TextStyle(fontSize: 8, color: AppColors.navy),
+                            style:
+                                TextStyle(fontSize: 8, color: AppColors.navy),
                           ),
                         ],
                       ),
