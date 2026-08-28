@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'map_screen.dart';
+import 'home_shell.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -60,7 +60,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     // 地図画面へ遷移
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const MapScreen()),
+     MaterialPageRoute(builder: (context) => const HomeShell()),
     );
   }
 
