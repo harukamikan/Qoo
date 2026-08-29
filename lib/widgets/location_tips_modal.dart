@@ -348,7 +348,7 @@ void showLocationTipsModal(
                                                 ),
                                                 const SizedBox(width: 4),
                                                 Text(
-                                                  'Helpful (${c.helpfulCount})',
+                                                  '${c.helpfulCount}',
                                                   style: const TextStyle(
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.bold,
