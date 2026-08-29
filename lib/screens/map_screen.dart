@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as ll;
 import 'package:geolocator/geolocator.dart';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/nearby_alert_service.dart';
@@ -15,6 +14,7 @@ import '../widgets/current_location_dot.dart';
 import '../widgets/grouped_bubble_marker.dart';
 import '../widgets/report_dialog.dart';
 import '../widgets/post_tips_dialog.dart';
+import '../widgets/location_tips_modal.dart';
 
 // main.dart に定義されている AppColors をそのまま参照する想定。
 // 参照できない場合は `import '../main.dart';` か、
@@ -406,379 +406,6 @@ class _MapPageState extends State<MapPage> {
     }
   }
 
-  // --- 同一スポットのTips一覧モーダル ---
-  void _showLocationTipsModal(
-    BuildContext context,
-    List<NearbyComment> commentsInLoc,
-  ) {
-    final targetSpot = commentsInLoc.first;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.background,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetCtx) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            final currentList = _nearbyComments
-                .where(
-                  (item) =>
-                      _toLocationKey(item.position) ==
-                      _toLocationKey(targetSpot.position),
-                )
-                .toList();
-            currentList.sort(
-              (a, b) => b.helpfulCount.compareTo(a.helpfulCount),
-            );
-
-            return DraggableScrollableSheet(
-              initialChildSize: 0.65,
-              maxChildSize: 0.9,
-              minChildSize: 0.4,
-              expand: false,
-              builder: (context, scrollController) {
-                return Column(
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.symmetric(vertical: 10),
-                      height: 4,
-                      width: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[400],
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 4,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.place,
-                                  color: AppColors.primary,
-                                  size: 22,
-                                ),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        targetSpot.placeName,
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.navy,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      Text(
-                                        'Tips一覧 (${currentList.length}件) • 約${targetSpot.distanceMeters.toStringAsFixed(0)}m',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: AppColors.textGrey,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                            ),
-                            icon: const Icon(Icons.edit_note, size: 16),
-                            label: const Text(
-                              '追加投稿',
-                              style: TextStyle(fontSize: 11),
-                            ),
-                           onPressed: () {
-                              Navigator.pop(sheetCtx);
-                              showPostTipsDialog(
-                                context,
-                                targetPosition: targetSpot.position,
-                                currentCenter: _currentCenter,
-                                initialPlaceName: targetSpot.placeName,
-                                onPosted: (newTip) {
-                                  setState(() {
-                                    _nearbyComments.insert(0, newTip);
-                                    _carouselIndices[
-                                        _toLocationKey(newTip.position)] = 0;
-                                  });
-                                },
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1),
-                    Expanded(
-                      child: ListView.builder(
-                        controller: scrollController,
-                        padding: const EdgeInsets.all(12),
-                        itemCount: currentList.length,
-                        itemBuilder: (context, index) {
-                          final c = currentList[index];
-                          final catColor = _getCategoryColor(c.category);
-                          final isMyTip = c.userName == 'You'; // 自分の投稿かどうか判定
-
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            elevation: 1.5,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(14.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Text(
-                                            c.userCountry,
-                                            style: const TextStyle(
-                                              fontSize: 18,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            c.userName,
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 13,
-                                              color: isMyTip
-                                                  ? AppColors.primary
-                                                  : Colors.black87,
-                                            ),
-                                          ),
-                                          if (isMyTip) ...[
-                                            const SizedBox(width: 6),
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 5,
-                                                vertical: 1.5,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: AppColors.primaryFaint,
-                                                borderRadius:
-                                                    BorderRadius.circular(4),
-                                                border: Border.all(
-                                                  color: AppColors.primary,
-                                                ),
-                                              ),
-                                              child: const Text(
-                                                '自分',
-                                                style: TextStyle(
-                                                  fontSize: 9.5,
-                                                  color: AppColors.primary,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                          if (index == 0 &&
-                                              currentList.length > 1) ...[
-                                            const SizedBox(width: 6),
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 5,
-                                                vertical: 1.5,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.amber.shade100,
-                                                borderRadius:
-                                                    BorderRadius.circular(4),
-                                              ),
-                                              child: const Text(
-                                                '👑 最多',
-                                                style: TextStyle(
-                                                  fontSize: 9.5,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.brown,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                          vertical: 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: catColor.withOpacity(0.15),
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          c.category,
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            color: catColor,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    c.content,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.black87,
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      // 自分の投稿の場合のみ削除ボタンを表示
-                                      if (isMyTip)
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.delete_outline,
-                                            size: 18,
-                                            color: Colors.redAccent,
-                                          ),
-                                          tooltip: 'この投稿を削除',
-                                          onPressed: () => _deleteSingleTip(
-                                            c,
-                                            sheetCtx,
-                                            setModalState,
-                                          ),
-                                        )
-                                      else
-                                        IconButton(
-                                          icon: const Icon(
-                                            Icons.flag_outlined,
-                                            size: 18,
-                                            color: AppColors.textGrey,
-                                          ),
-                                          tooltip: 'この投稿を通報',
-                                          onPressed: () => showReportDialog(
-                                            context,
-                                            title: c.placeName,
-                                          ),
-                                        ),
-
-                                      Builder(
-                                        builder: (context) {
-                                          final isHelpfulByMe =
-                                              _isHelpfulByMe(c.id);
-                                          return InkWell(
-                                            onTap: () {
-                                              _toggleHelpful(
-                                                c,
-                                                onLocalUpdate: () {
-                                                  setModalState(() {});
-                                                  currentList.sort(
-                                                    (a, b) => b.helpfulCount
-                                                        .compareTo(
-                                                            a.helpfulCount),
-                                                  );
-                                                },
-                                              );
-                                            },
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                            child: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 10,
-                                                vertical: 5,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: isHelpfulByMe
-                                                    ? AppColors.primary
-                                                        .withOpacity(0.28)
-                                                    : AppColors.primary
-                                                        .withOpacity(0.12),
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                                border: isHelpfulByMe
-                                                    ? Border.all(
-                                                        color:
-                                                            AppColors.primary,
-                                                        width: 1,
-                                                      )
-                                                    : null,
-                                              ),
-                                              child: Row(
-                                                children: [
-                                                  Icon(
-                                                    isHelpfulByMe
-                                                        ? Icons
-                                                            .thumb_up_alt_rounded
-                                                        : Icons
-                                                            .thumb_up_alt_outlined,
-                                                    size: 14,
-                                                    color: AppColors.primary,
-                                                  ),
-                                                  const SizedBox(width: 4),
-                                                  Text(
-                                                    'Helpful (${c.helpfulCount})',
-                                                    style: const TextStyle(
-                                                      fontSize: 12,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: AppColors.primary,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-
   Widget _mapSearch() => Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
@@ -860,8 +487,24 @@ class _MapPageState extends State<MapPage> {
                           getCategoryColor: _getCategoryColor,
                           isHelpfulByMe: _isHelpfulByMe,
                           onHelpfulTap: (c) => _toggleHelpful(c),
-                          onTap: () =>
-                              _showLocationTipsModal(context, entry.value),
+                          onTap: () => showLocationTipsModal(
+                            context,
+                            commentsInLoc: entry.value,
+                            currentCenter: _currentCenter,
+                            getAllComments: () => _nearbyComments,
+                            toLocationKey: _toLocationKey,
+                            getCategoryColor: _getCategoryColor,
+                            isHelpfulByMe: _isHelpfulByMe,
+                            onDeleteTip: _deleteSingleTip,
+                            onToggleHelpful: _toggleHelpful,
+                            onPosted: (newTip) {
+                              setState(() {
+                                _nearbyComments.insert(0, newTip);
+                                _carouselIndices[
+                                    _toLocationKey(newTip.position)] = 0;
+                              });
+                            },
+                          ),
                         ),
                       ),
                 ],
@@ -978,7 +621,7 @@ class _MapPageState extends State<MapPage> {
             heroTag: 'post_tips_btn',
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
-                       onPressed: () => showPostTipsDialog(
+            onPressed: () => showPostTipsDialog(
               context,
               targetPosition: _currentCenter,
               currentCenter: _currentCenter,
