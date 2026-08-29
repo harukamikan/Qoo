@@ -14,6 +14,7 @@ import '../models/nearby_comment.dart';
 import '../widgets/current_location_dot.dart';
 import '../widgets/grouped_bubble_marker.dart';
 import '../widgets/report_dialog.dart';
+import '../widgets/post_tips_dialog.dart';
 
 // main.dart に定義されている AppColors をそのまま参照する想定。
 // 参照できない場合は `import '../main.dart';` か、
@@ -405,191 +406,6 @@ class _MapPageState extends State<MapPage> {
     }
   }
 
-  // --- Tips投稿ダイアログ ---
-  void _showPostTipsDialog({
-    required ll.LatLng targetPosition,
-    String? initialPlaceName,
-  }) {
-    final placeController = TextEditingController(text: initialPlaceName ?? '');
-    final contentController = TextEditingController();
-    String selectedCategory = 'Food';
-    final categories = [
-      'Food',
-      'Onsen',
-      'Culture',
-      'Transportation',
-      'Manners',
-      'Money',
-      'Other',
-    ];
-
-    showDialog(
-      context: context,
-      builder: (dialogCtx) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Row(
-                children: [
-                  Icon(Icons.edit_location_alt, color: AppColors.primary),
-                  SizedBox(width: 8),
-                  Text(
-                    'Tipsを投稿',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '📍 座標: ${targetPosition.latitude.toStringAsFixed(4)}, ${targetPosition.longitude.toStringAsFixed(4)}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.navy,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'スポット名 / 場所の名前:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    TextField(
-                      controller: placeController,
-                      decoration: const InputDecoration(
-                        hintText: '例: ○○公園、駅前カフェ',
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'カテゴリ:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    DropdownButton<String>(
-                      value: selectedCategory,
-                      isExpanded: true,
-                      items: categories
-                          .map(
-                            (cat) =>
-                                DropdownMenuItem(value: cat, child: Text(cat)),
-                          )
-                          .toList(),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setDialogState(() => selectedCategory = val);
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Tips / アドバイス:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    TextField(
-                      controller: contentController,
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                        hintText: '旅行者へのおすすめポイントや注意点...',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogCtx),
-                  child: const Text('キャンセル'),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: () async {
-                    if (contentController.text.trim().isEmpty) return;
-
-                    final placeName = placeController.text.trim().isEmpty
-                        ? 'おすすめスポット'
-                        : placeController.text.trim();
-
-                    String newDocId =
-                        DateTime.now().millisecondsSinceEpoch.toString();
-                    try {
-                      final ref = await FirebaseFirestore.instance
-                          .collection('comments')
-                          .add({
-                        'place_name': placeName,
-                        'category': selectedCategory,
-                        'content': contentController.text.trim(),
-                        'latitude': targetPosition.latitude,
-                        'longitude': targetPosition.longitude,
-                        'user_name': 'You',
-                        'user_country': '🇯🇵',
-                        'helpful_count': 1,
-                        'created_at': FieldValue.serverTimestamp(),
-                      });
-                      newDocId = ref.id;
-                    } catch (e) {
-                      debugPrint('Firebase save note: $e');
-                    }
-
-                    final newTip = NearbyComment(
-                      id: newDocId,
-                      placeName: placeName,
-                      category: selectedCategory,
-                      content: contentController.text.trim(),
-                      userName: 'You',
-                      userCountry: '🇯🇵',
-                      helpfulCount: 1,
-                      position: targetPosition,
-                      distanceMeters: distanceMeters(
-                        _currentCenter,
-                        targetPosition,
-                      ),
-                    );
-
-                    setState(() {
-                      _nearbyComments.insert(0, newTip);
-                      _carouselIndices[_toLocationKey(targetPosition)] = 0;
-                    });
-
-                    if (!mounted) return;
-                    Navigator.pop(dialogCtx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('「$placeName」にTipsを追加しました！')),
-                    );
-                  },
-                  child: const Text('投稿する'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
   // --- 同一スポットのTips一覧モーダル ---
   void _showLocationTipsModal(
     BuildContext context,
@@ -693,11 +509,20 @@ class _MapPageState extends State<MapPage> {
                               '追加投稿',
                               style: TextStyle(fontSize: 11),
                             ),
-                            onPressed: () {
+                           onPressed: () {
                               Navigator.pop(sheetCtx);
-                              _showPostTipsDialog(
+                              showPostTipsDialog(
+                                context,
                                 targetPosition: targetSpot.position,
+                                currentCenter: _currentCenter,
                                 initialPlaceName: targetSpot.placeName,
+                                onPosted: (newTip) {
+                                  setState(() {
+                                    _nearbyComments.insert(0, newTip);
+                                    _carouselIndices[
+                                        _toLocationKey(newTip.position)] = 0;
+                                  });
+                                },
                               );
                             },
                           ),
@@ -993,7 +818,17 @@ class _MapPageState extends State<MapPage> {
                 flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
               ),
               onLongPress: (tapPosition, point) {
-                _showPostTipsDialog(targetPosition: point);
+                showPostTipsDialog(
+                  context,
+                  targetPosition: point,
+                  currentCenter: _currentCenter,
+                  onPosted: (newTip) {
+                    setState(() {
+                      _nearbyComments.insert(0, newTip);
+                      _carouselIndices[_toLocationKey(newTip.position)] = 0;
+                    });
+                  },
+                );
               },
             ),
             children: [
@@ -1143,8 +978,17 @@ class _MapPageState extends State<MapPage> {
             heroTag: 'post_tips_btn',
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
-            onPressed: () =>
-                _showPostTipsDialog(targetPosition: _currentCenter),
+                       onPressed: () => showPostTipsDialog(
+              context,
+              targetPosition: _currentCenter,
+              currentCenter: _currentCenter,
+              onPosted: (newTip) {
+                setState(() {
+                  _nearbyComments.insert(0, newTip);
+                  _carouselIndices[_toLocationKey(newTip.position)] = 0;
+                });
+              },
+            ),
             icon: const Icon(Icons.add_comment),
             label: const Text('現在地にTips投稿'),
           ),
