@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'home_shell.dart';
+import '../models/user_profile.dart';
+import '../services/auth_service.dart';
+import '../services/user_repository.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -36,14 +38,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     'Other',
   ];
 
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Googleアカウントの表示名を初期値に入れておく
+    _nameController.text =
+        AuthService.instance.currentUser?.displayName ?? '';
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
     super.dispose();
   }
 
-  void _onSubmit() {
-    // 今はまだFirebase接続してないので、入力チェックだけ
+  Future<void> _onSubmit() async {
     if (_nameController.text.isEmpty ||
         _selectedNationality == null ||
         _selectedLanguage == null) {
@@ -53,15 +64,35 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       return;
     }
 
-    // TODO: ここでFirestoreにUserProfileを保存する処理を後で追加
-    debugPrint('Name: ${_nameController.text}');
-    debugPrint('Nationality: $_selectedNationality');
-    debugPrint('Language: $_selectedLanguage');
+    final uid = AuthService.instance.uid;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('ログイン情報が取得できませんでした。もう一度ログインしてください')),
+      );
+      return;
+    }
 
-    // 地図画面へ遷移
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const HomeShell()),
-    );
+    setState(() => _saving = true);
+    try {
+      await UserRepository.instance.saveProfile(
+        UserProfile(
+          userId: uid,
+          name: _nameController.text.trim(),
+          nationality: _selectedNationality!,
+          language: _selectedLanguage!,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('保存に失敗しました。通信環境を確認してもう一度お試しください')),
+      );
+      return;
+    }
+
+    // 保存完了。画面遷移は AuthGate が再評価して行う。
+    AuthService.instance.notifyProfileChanged();
   }
 
   @override
@@ -131,10 +162,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             const SizedBox(height: 32),
 
             ElevatedButton(
-              onPressed: _onSubmit,
-              child: const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12.0),
-                child: Text('はじめる'),
+              onPressed: _saving ? null : _onSubmit,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12.0),
+                child: _saving
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('はじめる'),
               ),
             ),
           ],

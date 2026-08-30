@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../services/auth_service.dart';
 import 'map_screen.dart'; // 本物のMapPage（Firestore連携・現在地・Tips投稿など）
 import 'gacha/gacha_screen.dart';
 
@@ -167,10 +168,27 @@ class SavedPage extends StatelessWidget {
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
   @override
-  Widget build(BuildContext context) => ListView(
-        padding: const EdgeInsets.all(24),
-        children: const [
-          PageHeader('プロフィール'),
+  Widget build(BuildContext context) {
+    final user = AuthService.instance.currentUser;
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        const PageHeader('プロフィール'),
+        const SizedBox(height: 16),
+        if (user != null) ...[
+          ListTile(
+            leading: const Icon(Icons.account_circle, size: 40),
+            title: Text(user.displayName ?? '名前未設定'),
+            subtitle: Text(user.email ?? ''),
+          ),
+          const SizedBox(height: 16),
         ],
-      );
+        OutlinedButton.icon(
+          onPressed: () => AuthService.instance.signOut(),
+          icon: const Icon(Icons.logout),
+          label: const Text('ログアウト'),
+        ),
+      ],
+    );
+  }
 }
