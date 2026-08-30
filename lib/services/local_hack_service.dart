@@ -2,47 +2,12 @@ import 'package:geolocator/geolocator.dart';
 import '../models/local_hack.dart';
 
 class LocalHackService {
-  // ★ 事前登録しておく運営のHackデータリスト（櫛田神社などをここに追加）
-  static final List<LocalHack> initialHacks = [
-    LocalHack(
-      id: 'hack_kushida_01',
-      title: '櫛田神社 参拝ガイド（7 Step）',
-      category: '神社',
-      latitude: 33.5930,
-      longitude: 130.4106,
-      content: '''⛩️ 櫛田神社 参拝ガイド（7 Step）
-信仰に関わらず、誰でも歓迎されます。心を落ち着かせてお参りしましょう！
+  // --------------------------------------------------
+  // 1. 共通のマナー文章（リストの外で定義）
+  // --------------------------------------------------
 
-1. 鳥居の前で一礼：境内の入口（鳥居）をくぐる前に、敬意を込めて1回お辞儀をします。
-2. 参道は端を歩く：中央は「神様の通り道」です。真ん中を避けて端を歩きましょう。
-3. 手水舎（ちょうずや）で清める：右手で柄杓（ひしゃく）を持って水を汲み、「左手→右手」の順にかけます。手のひらに水を溜めて口をすすぎます（※柄杓に直接口をつけるのは厳禁！）。もう一度左手を洗い、最後に柄杓の柄を流して戻します。
-4. 鈴を鳴らす：紐を揺らしてカランカランと音を立て、神様に訪問を知らせます。
-5. お賽銭（さいせん）を入れる：箱へそっと入れます。「ご縁（Good fortune）」につながる「5円玉」が人気ですが、金額は自由です。
-6. 二礼 二拍手 一礼：2回 深くお辞儀をする ➔ 手を2回 叩いて音を鳴らし、手を合わせたままお祈りをする ➔ 最後に1回 深くお辞儀をする。
-7. 最後にもう一度一礼：鳥居を出て境内を去る際、本殿に向かって「ありがとう」の気持ちを込めてお辞儀をします。''',
-    ),
-    // 今後新しいスポットを追加する場合は、ここに同じように書いて並べます
-  LocalHack(
-      id: 'hack_tochoji_01',
-      title: '東長寺 拝観＆護摩焚きガイド',
-      category: '寺',
-      latitude: 33.5952,
-      longitude: 130.4143,
-      content: '''🛕 東長寺（とうちょうじ） 拝観＆護摩焚きガイド
-空海が創建した日本最古の密教寺院です。大仏様や厳粛な儀式をリスペクトを持って拝観しましょう！
-
-【基本の境内マナー】
-・撮影は完全禁止（Strictly No Photos）: 「福岡大仏」の鎮座する大仏殿内、および本堂内での写真・動画撮影は一切禁止です。
-・静寂を保つ: 観光地であると同時に「祈りの場」です。大声での会話は控え、スマホはマナーモードか電源OFFにしてバッグへ。
-・大仏殿への入場は100円: 福岡大仏と「地獄・極楽めぐり」の拝観には100円（灯明・線香代）が必要です。あらかじめ小銭を用意しておきましょう。
-
-【毎月開催！「護摩焚き」参加マナー】
-・靴下（ストッキング等）の着用が必須: 28日に本堂（畳敷き）へ上がる際はもちろん、1日の大仏殿も靴を脱いで入場するため素足は厳禁です。必ず綺麗な靴下を着用していきましょう。
-・僧侶の修行・祈りの場: 護摩焚きは僧侶の厳粛な修行でもあります。お堂に入ったら静かに手を合わせ、心を落ち着かせて拝観してください。''',
-    ),
-
-    // --- バス乗り方マナー（共通文章） ---
-    const String busContent = '''🚌バスの乗り方ガイド
+  // バス乗車マナー
+  static const String busContent = '''🚌バスの乗り方ガイド
 
 乗車時のマナー
 ・バス停では危ないので、完全に止まるまで下がって待つ
@@ -61,68 +26,8 @@ class LocalHackService {
 ・アナウンスを聞き、早めに降車ボタンを押す
 ・バスが完全に止まるまで、席を立たない''';
 
-    // 1. 博多駅バスターミナル
-    LocalHack(
-      id: 'hack_bus_hakata_bt',
-      title: '🚌 バスの乗り方ガイド（博多エリア）',
-      category: '交通',
-      latitude: 33.5908,
-      longitude: 130.4194,
-      content: busContent,
-    ),
-
-    // 2. 博多駅前 Aのりば（西日本シティ銀行前）
-    LocalHack(
-      id: 'hack_bus_hakata_mae_a',
-      title: '🚌 バスの乗り方ガイド（博多エリア）',
-      category: '交通',
-      latitude: 33.5896,
-      longitude: 130.4185,
-      content: busContent,
-    ),
-
-    // 3. 博多駅前 B・C・Dのりば（博多駅博多口前）
-    LocalHack(
-      id: 'hack_bus_hakata_mae_bcd',
-      title: '🚌 バスの乗り方ガイド（博多エリア）',
-      category: '交通',
-      latitude: 33.5898,
-      longitude: 130.4190,
-      content: busContent,
-    ),
-
-    // 4. 博多駅前 E・Fのりば（KITTE博多前）
-    LocalHack(
-      id: 'hack_bus_hakata_mae_ef',
-      title: '🚌 バスの乗り方ガイド（博多エリア）',
-      category: '交通',
-      latitude: 33.5888,
-      longitude: 130.4198,
-      content: busContent,
-    ),
-
-    // 5. 博多駅筑紫口バス停
-    LocalHack(
-      id: 'hack_bus_hakata_chikushi',
-      title: '🚌 バスの乗り方ガイド（博多エリア）',
-      category: '交通',
-      latitude: 33.5898,
-      longitude: 130.4210,
-      content: busContent,
-    ),
-
-    // 6. 博多駅筑紫口（合同庁舎前）バス停
-    LocalHack(
-      id: 'hack_bus_hakata_godo',
-      title: '🚌 バスの乗り方ガイド（博多エリア）',
-      category: '交通',
-      latitude: 33.5912,
-      longitude: 130.4225,
-      content: busContent,
-    ),
-
-    // --- 銭湯・温泉マナー（共通文章） ---
-    const String onsenContent = '''♨銭湯・温泉の基本マナーカード
+  // 銭湯・温泉マナー
+  static const String onsenContent = '''♨銭湯・温泉の基本マナーカード
 
 【基本の6大マナー】
 ・水着・下着はNG（服をすべて脱いで入る）
@@ -137,68 +42,8 @@ class LocalHackService {
 ・入れ墨（タトゥー）のルール：レトロな街の銭湯はタトゥーOKな場所も多いですが、大型スーパー銭湯や温泉施設では「タトゥー不可」または「シールで隠す必要あり」の場合が多いです。
 ・混浴の年齢制限：福岡県では、6歳以上の男女の混浴は禁止されています。''';
 
-    // 1. 八百治の湯（博多駅近く）
-    LocalHack(
-      id: 'hack_onsen_yaoji',
-      title: '♨ 銭湯・温泉の基本マナー（博多エリア）',
-      category: '温泉・銭湯',
-      latitude: 33.5872,
-      longitude: 130.4168,
-      content: onsenContent,
-    ),
-
-    // 2. 博多由布院・武雄温泉 万葉の湯
-    LocalHack(
-      id: 'hack_onsen_manyo',
-      title: '♨ 銭湯・温泉の基本マナー（博多エリア）',
-      category: '温泉・銭湯',
-      latitude: 33.5828,
-      longitude: 130.4385,
-      content: onsenContent,
-    ),
-
-    // 3. 天然温泉 波葉の湯（ベイサイドプレイス博多）
-    LocalHack(
-      id: 'hack_onsen_namiha',
-      title: '♨ 銭湯・温泉の基本マナー（博多エリア）',
-      category: '温泉・銭湯',
-      latitude: 33.6038,
-      longitude: 130.3980,
-      content: onsenContent,
-    ),
-
-    // 4. 鶴亀湯（博多区住吉のレトロ銭湯）
-    LocalHack(
-      id: 'hack_onsen_tsurukame',
-      title: '♨ 銭湯・温泉の基本マナー（博多エリア）',
-      category: '温泉・銭湯',
-      latitude: 33.5855,
-      longitude: 130.4120,
-      content: onsenContent,
-    ),
-
-    // 5. 千代の湯（博多区千代）
-    LocalHack(
-      id: 'hack_onsen_chiyo',
-      title: '♨ 銭湯・温泉の基本マナー（博多エリア）',
-      category: '温泉・銭湯',
-      latitude: 33.6042,
-      longitude: 130.4165,
-      content: onsenContent,
-    ),
-
-    // 6. 吉塚温泉（博多区吉塚）
-    LocalHack(
-      id: 'hack_onsen_yoshizuka',
-      title: '♨ 銭湯・温泉の基本マナー（博多エリア）',
-      category: '温泉・銭湯',
-      latitude: 33.6080,
-      longitude: 130.4285,
-      content: onsenContent,
-    ),
-
-    // --- 屋台マナー（共通文章） ---
-    const String yataiContent = '''🏮 中洲・天神の屋台（Yatai）を楽しむマナー＆コツ
+  // 屋台マナー
+  static const String yataiContent = '''🏮 中洲・天神の屋台（Yatai）を楽しむマナー＆コツ
 福岡・博多だけにしかない特別な夜の体験です！ルールを守って楽しくハシゴ（Food hopping）しましょう。
 
 【基本のマナー＆準備】
@@ -211,7 +56,166 @@ class LocalHackService {
 ・ルールと価格を事前にチェック: お通し（Appetizer charge）や「1人1品注文（One drink/food order）」などのルールがある店もあります。入店時にメニュー表を確認しましょう。
 ・予約は基本的に不可: 来た順番に案内されるのが基本です。行列がある場合は並んで待ちましょう。''';
 
-    // 1. 中洲屋台街（春吉橋・清流公園周辺）
+  // ラーメンマナー
+  static const String ramenContent = '''🍜 博多ラーメン（Hakata Ramen）を楽しむマナー＆コツ
+とんこつラーメンの本場・博多での食事体験を100%楽しむためのローカルルールです。サクッと食べて粋に楽しもう！
+
+【注文のルール】
+・麺の硬さを指定する: 注文時に麺の硬さを伝えるのが博多流です。「カタ（Hard）」や「バリカタ（Very Hard）」が人気です。
+・替え玉（Kaedama）は早めに注文: おかわり（追加の麺）を頼む場合は、1玉目の麺が半分〜1/3くらい残っているタイミングで頼むと、途切れず美味しく食べられます。
+・スープは残しておく: 替え玉をする予定があるなら、最初にスープを飲み干さないように注意しましょう。
+
+【食事中・店内でのマナー】
+・卓上トッピングは後から: 紅生姜や高菜、ゴマなどの無料トッピングは、まずオリジナルのスープを味わってから少しずつ入れましょう。
+・写真は手短に: 熱いうちに食べるのが一番です。写真撮影は手短に済ませ、調理中のスタッフを直接撮影するのは控えましょう。
+
+【退店時のマナー】
+・食べ終わったらすぐ退店: ラーメン店は回転率が大切です。食後の長居は避け、席を譲りましょう。
+・「Gochisosama!（ごちそうさま）」: お店を出る時に店主に一言感謝を伝えると、とても喜ばれます。''';
+
+
+  // --------------------------------------------------
+  // 2. マスターデータリスト
+  // --------------------------------------------------
+  static final List<LocalHack> initialHacks = [
+    // ⛩️ 神社・寺
+    LocalHack(
+      id: 'hack_kushida_01',
+      title: '櫛田神社 参拝ガイド（7 Step）',
+      category: '神社',
+      latitude: 33.5930,
+      longitude: 130.4106,
+      content: '''⛩️ 櫛田神社 参拝ガイド（7 Step）
+信仰に関わらず、誰でも歓迎されます。心を落ち着かせてお参りしましょう！
+
+1. 鳥居の前で一礼：境内の入口（鳥居）をくぐる前に、敬意を込めて1回お辞儀をします。
+2. 参道は端を歩く：中央は「神様の通り道」です。真ん中を避けて端を歩きましょう。
+3. 手水舎（ちょうずや）で清める：右手で柄杓（ひしゃく）を持って水を汲み、「左手→右手」の順にかけます。手のひらに水を溜めて口をすすぎます（※柄杓に直接口をつけるのは厳禁！）。もう一度左手を洗い、最後に柄杓の柄を流して戻します。
+4. 鈴を鳴らす：紐を揺らしてカランカランと音を立て、神様に訪問を知らせます。
+5. お賽銭（さいせん）を入れる：箱へそっと入れます。「ご縁（Good fortune）」につながる「5円玉」が人気ですが、金額は自由です。
+6. 二礼 二拍手 一礼：2回 深くお辞儀をする ➔ 手を2回 叩いて音を鳴らし、手を合わせたままお祈りをする ➔ 最後に1回 深くお辞儀をする。
+7. 最後にもう一度一礼：鳥居を出て境内を去る際、本殿に向かって「ありがとう」の気持ちを込めてお辞儀をします。''',
+    ),
+    LocalHack(
+      id: 'hack_tochoji_01',
+      title: '東長寺 拝観＆護摩焚きガイド',
+      category: '寺',
+      latitude: 33.5952,
+      longitude: 130.4143,
+      content: '''🛕 東長寺（とうちょうじ） 拝観＆護摩焚きガイド
+空海が創建した日本最古の密教寺院です。大仏様や厳粛な儀式をリスペクトを持って拝観しましょう！
+
+【基本の境内マナー】
+・撮影は完全禁止（Strictly No Photos）: 「福岡大仏」の鎮座する大仏殿内、および本堂内での写真・動画撮影は一切禁止です。
+・静寂を保つ: 観光地であると同時に「祈りの場」です。大声での会話は控え、スマホはマナーモードか電源OFFにしてバッグへ。
+・大仏殿への入場は100円: 福岡大仏と「地獄・極楽めぐり」の拝観には100円（灯明・線香代）が必要です。あらかじめ小銭を用意しておきましょう。
+
+【毎月開催！「護摩焚き」参加マナー】
+・靴下（ストッキング等）の着用が必須: 28日に本堂（畳敷き）へ上がる際はもちろん、1日の大仏殿も靴を脱いで入場するため素足は厳禁です。必ず綺麗な靴下を着用していきましょう。
+・僧侶の修行・祈りの場: 護摩焚きは僧侶の厳粛な修行でもあります。お堂に入ったら静かに手を合わせ、心を落ち着かせて拝観してください。''',
+    ),
+
+    // 🚌 バス乗り場
+    LocalHack(
+      id: 'hack_bus_hakata_bt',
+      title: '🚌 バスの乗り方ガイド（博多エリア）',
+      category: '交通',
+      latitude: 33.5908,
+      longitude: 130.4194,
+      content: busContent,
+    ),
+    LocalHack(
+      id: 'hack_bus_hakata_mae_a',
+      title: '🚌 バスの乗り方ガイド（博多エリア）',
+      category: '交通',
+      latitude: 33.5896,
+      longitude: 130.4185,
+      content: busContent,
+    ),
+    LocalHack(
+      id: 'hack_bus_hakata_mae_bcd',
+      title: '🚌 バスの乗り方ガイド（博多エリア）',
+      category: '交通',
+      latitude: 33.5898,
+      longitude: 130.4190,
+      content: busContent,
+    ),
+    LocalHack(
+      id: 'hack_bus_hakata_mae_ef',
+      title: '🚌 バスの乗り方ガイド（博多エリア）',
+      category: '交通',
+      latitude: 33.5888,
+      longitude: 130.4198,
+      content: busContent,
+    ),
+    LocalHack(
+      id: 'hack_bus_hakata_chikushi',
+      title: '🚌 バスの乗り方ガイド（博多エリア）',
+      category: '交通',
+      latitude: 33.5898,
+      longitude: 130.4210,
+      content: busContent,
+    ),
+    LocalHack(
+      id: 'hack_bus_hakata_godo',
+      title: '🚌 バスの乗り方ガイド（博多エリア）',
+      category: '交通',
+      latitude: 33.5912,
+      longitude: 130.4225,
+      content: busContent,
+    ),
+
+    // ♨ 銭湯・温泉
+    LocalHack(
+      id: 'hack_onsen_yaoji',
+      title: '♨ 銭湯・温泉の基本マナー（博多エリア）',
+      category: '温泉・銭湯',
+      latitude: 33.5872,
+      longitude: 130.4168,
+      content: onsenContent,
+    ),
+    LocalHack(
+      id: 'hack_onsen_manyo',
+      title: '♨ 銭湯・温泉の基本マナー（博多エリア）',
+      category: '温泉・銭湯',
+      latitude: 33.5828,
+      longitude: 130.4385,
+      content: onsenContent,
+    ),
+    LocalHack(
+      id: 'hack_onsen_namiha',
+      title: '♨ 銭湯・温泉の基本マナー（博多エリア）',
+      category: '温泉・銭湯',
+      latitude: 33.6038,
+      longitude: 130.3980,
+      content: onsenContent,
+    ),
+    LocalHack(
+      id: 'hack_onsen_tsurukame',
+      title: '♨ 銭湯・温泉の基本マナー（博多エリア）',
+      category: '温泉・銭湯',
+      latitude: 33.5855,
+      longitude: 130.4120,
+      content: onsenContent,
+    ),
+    LocalHack(
+      id: 'hack_onsen_chiyo',
+      title: '♨ 銭湯・温泉の基本マナー（博多エリア）',
+      category: '温泉・銭湯',
+      latitude: 33.6042,
+      longitude: 130.4165,
+      content: onsenContent,
+    ),
+    LocalHack(
+      id: 'hack_onsen_yoshizuka',
+      title: '♨ 銭湯・温泉の基本マナー（博多エリア）',
+      category: '温泉・銭湯',
+      latitude: 33.6080,
+      longitude: 130.4285,
+      content: onsenContent,
+    ),
+
+    // 🏮 屋台
     LocalHack(
       id: 'hack_yatai_nakasu',
       title: '🏮 屋台（Yatai）を楽しむマナー＆コツ',
@@ -220,8 +224,6 @@ class LocalHackService {
       longitude: 130.4075,
       content: yataiContent,
     ),
-
-    // 2. 天神屋台街（渡辺通・昭和通交差点周辺）
     LocalHack(
       id: 'hack_yatai_tenjin',
       title: '🏮 屋台（Yatai）を楽しむマナー＆コツ',
@@ -230,8 +232,6 @@ class LocalHackService {
       longitude: 130.3988,
       content: yataiContent,
     ),
-
-    // 3. 天神南・日本銀行前屋台街
     LocalHack(
       id: 'hack_yatai_tenjin_south',
       title: '🏮 屋台（Yatai）を楽しむマナー＆コツ',
@@ -240,8 +240,6 @@ class LocalHackService {
       longitude: 130.4002,
       content: yataiContent,
     ),
-
-    // 4. 長浜屋台街（長浜ラーメン街周辺）
     LocalHack(
       id: 'hack_yatai_nagahama',
       title: '🏮 屋台（Yatai）を楽しむマナー＆コツ',
@@ -250,19 +248,70 @@ class LocalHackService {
       longitude: 130.3895,
       content: yataiContent,
     ),
+
+    // 🍜 ラーメン
+    LocalHack(
+      id: 'hack_ramen_issou_hakata',
+      title: '🍜 博多ラーメンを楽しむマナー＆コツ',
+      category: 'グルメ・ラーメン',
+      latitude: 33.5891,
+      longitude: 130.4233,
+      content: ramenContent,
+    ),
+    LocalHack(
+      id: 'hack_ramen_ikkousha_main',
+      title: '🍜 博多ラーメンを楽しむマナー＆コツ',
+      category: 'グルメ・ラーメン',
+      latitude: 33.5882,
+      longitude: 130.4162,
+      content: ramenContent,
+    ),
+    LocalHack(
+      id: 'hack_ramen_shinshin_kitte',
+      title: '🍜 博多ラーメンを楽しむマナー＆コツ',
+      category: 'グルメ・ラーメン',
+      latitude: 33.5888,
+      longitude: 130.4198,
+      content: ramenContent,
+    ),
+    LocalHack(
+      id: 'hack_ramen_ichiran_hakata',
+      title: '🍜 博多ラーメンを楽しむマナー＆コツ',
+      category: 'グルメ・ラーメン',
+      latitude: 33.5896,
+      longitude: 130.4178,
+      content: ramenContent,
+    ),
+    LocalHack(
+      id: 'hack_ramen_ippudo_deitos',
+      title: '🍜 博多ラーメンを楽しむマナー＆コツ',
+      category: 'グルメ・ラーメン',
+      latitude: 33.5898,
+      longitude: 130.4208,
+      content: ramenContent,
+    ),
+    LocalHack(
+      id: 'hack_ramen_kawabata',
+      title: '🍜 博多ラーメンを楽しむマナー＆コツ',
+      category: 'グルメ・ラーメン',
+      latitude: 33.5925,
+      longitude: 130.4105,
+      content: ramenContent,
+    ),
   ];
 
-  // 現在地から500m以内にあるHackを抽出する関数
+  // --------------------------------------------------
+  // 3. 周辺Hack抽出ロジック
+  // --------------------------------------------------
   List<LocalHack> getHacksAroundUser({
     required double userLat,
     required double userLng,
-    List<LocalHack>? allHacks, // 引数が渡されない場合は上記の initialHacks を使う
+    List<LocalHack>? allHacks,
   }) {
     final targetHacks = allHacks ?? initialHacks;
     List<LocalHack> nearbyHacks = [];
 
     for (var hack in targetHacks) {
-      // ユーザーの現在地とHackの距離（メートル単位）を計算
       double distanceInMeters = Geolocator.distanceBetween(
         userLat,
         userLng,
@@ -270,7 +319,6 @@ class LocalHackService {
         hack.longitude,
       );
 
-      // 500m以内の場合に追加
       if (distanceInMeters <= 500) {
         nearbyHacks.add(hack);
       }
