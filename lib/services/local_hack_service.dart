@@ -196,6 +196,60 @@ class LocalHackService {
       longitude: 130.4285,
       content: onsenContent,
     ),
+
+    // --- 屋台マナー（共通文章） ---
+    const String yataiContent = '''🏮 中洲・天神の屋台（Yatai）を楽しむマナー＆コツ
+福岡・博多だけにしかない特別な夜の体験です！ルールを守って楽しくハシゴ（Food hopping）しましょう。
+
+【基本のマナー＆準備】
+・トイレは事前に済ませる: 屋台にはトイレがありません。行く前に済ませるか、困ったら店主に近くの公衆トイレを聞きましょう。
+・荷物は小さくまとめる: 店内が狭いため、大きなスーツケースはホテルやロッカーに預けておくのがスマートです。
+・長居はせず席を譲る: 席数が10席前後と少ないため、食べ終わったら次の人に席を譲りましょう。ハシゴ酒を楽しむのが屋台流です。
+・詰め合って座る: お互いに少しずつ席を詰めて、みんなで気持ちよく座りましょう。
+
+【注文＆料金のルール】
+・ルールと価格を事前にチェック: お通し（Appetizer charge）や「1人1品注文（One drink/food order）」などのルールがある店もあります。入店時にメニュー表を確認しましょう。
+・予約は基本的に不可: 来た順番に案内されるのが基本です。行列がある場合は並んで待ちましょう。''';
+
+    // 1. 中洲屋台街（春吉橋・清流公園周辺）
+    LocalHack(
+      id: 'hack_yatai_nakasu',
+      title: '🏮 屋台（Yatai）を楽しむマナー＆コツ',
+      category: 'グルメ・屋台',
+      latitude: 33.5898,
+      longitude: 130.4075,
+      content: yataiContent,
+    ),
+
+    // 2. 天神屋台街（渡辺通・昭和通交差点周辺）
+    LocalHack(
+      id: 'hack_yatai_tenjin',
+      title: '🏮 屋台（Yatai）を楽しむマナー＆コツ',
+      category: 'グルメ・屋台',
+      latitude: 33.5916,
+      longitude: 130.3988,
+      content: yataiContent,
+    ),
+
+    // 3. 天神南・日本銀行前屋台街
+    LocalHack(
+      id: 'hack_yatai_tenjin_south',
+      title: '🏮 屋台（Yatai）を楽しむマナー＆コツ',
+      category: 'グルメ・屋台',
+      latitude: 33.5885,
+      longitude: 130.4002,
+      content: yataiContent,
+    ),
+
+    // 4. 長浜屋台街（長浜ラーメン街周辺）
+    LocalHack(
+      id: 'hack_yatai_nagahama',
+      title: '🏮 屋台（Yatai）を楽しむマナー＆コツ',
+      category: 'グルメ・屋台',
+      latitude: 33.5960,
+      longitude: 130.3895,
+      content: yataiContent,
+    ),
   ];
 
   // 現在地から500m以内にあるHackを抽出する関数
