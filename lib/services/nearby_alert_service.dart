@@ -27,7 +27,8 @@ List<MapEntry<String, String>> findNewlyNearby({
     if (lat == null || lng == null) continue;
 
     if (distanceMeters(here, ll.LatLng(lat, lng)) <= walkingAlertRadiusMeters) {
-      result.add(MapEntry(entry.key, data['place_name'] as String? ?? '近くのスポット'));
+      result
+          .add(MapEntry(entry.key, data['place_name'] as String? ?? '近くのスポット'));
     }
   }
   return result;
@@ -79,9 +80,11 @@ class NearbyAlertService {
 
   Future<void> _ensureInitialized() async {
     if (_initialized) return;
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings();
-    const settings = InitializationSettings(android: androidSettings, iOS: iosSettings);
+    const settings =
+        InitializationSettings(android: androidSettings, iOS: iosSettings);
     await _notifications.initialize(settings: settings);
     await _notifications
         .resolvePlatformSpecificImplementation<
@@ -92,7 +95,8 @@ class NearbyAlertService {
 
   Future<void> _checkNearbyComments(Position position) async {
     final here = ll.LatLng(position.latitude, position.longitude);
-    final snapshot = await FirebaseFirestore.instance.collection('comments').get();
+    final snapshot =
+        await FirebaseFirestore.instance.collection('comments').get();
     final commentsById = {for (final doc in snapshot.docs) doc.id: doc.data()};
 
     final newlyNearby = findNewlyNearby(

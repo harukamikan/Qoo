@@ -62,8 +62,8 @@ class ReviewHistoryScreen extends StatelessWidget {
                           ),
                           ReviewCard(
                             review: review,
-                            onHelpfulTap: () => AppData.instance
-                                .incrementHelpful(review.id),
+                            onHelpfulTap: () =>
+                                AppData.instance.incrementHelpful(review.id),
                             onMoreTap: () {},
                             onDeleteTap: () {
                               AppData.instance.removeReview(review.id);

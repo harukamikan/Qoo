@@ -70,8 +70,7 @@ class AppData extends ChangeNotifier {
 
   // ---------------- 派生値（プロフィール統計） ----------------
 
-  int get savedCount =>
-      _savedBaseline + places.where((p) => p.isSaved).length;
+  int get savedCount => _savedBaseline + places.where((p) => p.isSaved).length;
 
   int get postedCount =>
       _postedBaseline + reviews.where((r) => r.isMine).length;

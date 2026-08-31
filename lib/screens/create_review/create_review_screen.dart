@@ -105,8 +105,7 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
     final text = _textController.text;
     final selection = _textController.selection;
     final insertAt = selection.start >= 0 ? selection.start : text.length;
-    final newText =
-        text.replaceRange(insertAt, insertAt, emoji);
+    final newText = text.replaceRange(insertAt, insertAt, emoji);
     _textController.value = TextEditingValue(
       text: newText,
       selection: TextSelection.collapsed(offset: insertAt + emoji.length),
@@ -358,8 +357,8 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
                 ),
                 Text(
                   '${_textController.text.length} / 500',
-                  style: const TextStyle(
-                      color: AppColors.textGrey, fontSize: 13),
+                  style:
+                      const TextStyle(color: AppColors.textGrey, fontSize: 13),
                 ),
               ],
             ),
@@ -401,8 +400,7 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
                             InkWell(
                               onTap: () {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('AI文章提案は準備中です')),
+                                  const SnackBar(content: Text('AI文章提案は準備中です')),
                                 );
                               },
                               child: const Icon(Icons.autorenew,
@@ -411,10 +409,8 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
                             const SizedBox(width: 12),
                             InkWell(
                               onTap: _showEmojiPicker,
-                              child: const Icon(
-                                  Icons.emoji_emotions_outlined,
-                                  size: 18,
-                                  color: AppColors.primary),
+                              child: const Icon(Icons.emoji_emotions_outlined,
+                                  size: 18, color: AppColors.primary),
                             ),
                           ],
                         ),
@@ -492,8 +488,8 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
                     const SizedBox(height: 2),
                     const Text(
                       '最大5枚まで',
-                      style: TextStyle(
-                          color: AppColors.textGrey, fontSize: 12.5),
+                      style:
+                          TextStyle(color: AppColors.textGrey, fontSize: 12.5),
                     ),
                   ],
                 ),

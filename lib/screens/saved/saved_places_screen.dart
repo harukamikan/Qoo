@@ -47,8 +47,8 @@ class _SavedPlacesScreenState extends State<SavedPlacesScreen> {
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: SizedBox(
                     height: 42,
                     child: ListView.separated(
@@ -60,8 +60,7 @@ class _SavedPlacesScreenState extends State<SavedPlacesScreen> {
                         return CategoryChip(
                           label: cat,
                           selected: cat == _selectedCategory,
-                          onTap: () =>
-                              setState(() => _selectedCategory = cat),
+                          onTap: () => setState(() => _selectedCategory = cat),
                         );
                       },
                     ),

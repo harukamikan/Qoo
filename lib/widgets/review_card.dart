@@ -141,8 +141,8 @@ class _ReviewCardState extends State<ReviewCard> {
                         widget.onHelpfulTap();
                       },
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                   child: Row(
                     children: [
                       Icon(
@@ -176,8 +176,8 @@ class _ReviewCardState extends State<ReviewCard> {
                 const SizedBox(width: 4),
                 Text(
                   '(${review.photoCount})',
-                  style: const TextStyle(
-                      fontSize: 13, color: AppColors.textGrey),
+                  style:
+                      const TextStyle(fontSize: 13, color: AppColors.textGrey),
                 ),
               ],
               const Spacer(),

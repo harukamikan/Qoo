@@ -128,7 +128,8 @@ class _MapScreenState extends State<MapScreen> {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: const Text('人気の口コミ'),
-        content: const Text('このエリアには合計9,999件の口コミが投稿されています。カテゴリーを絞り込んで探してみましょう。'),
+        content:
+            const Text('このエリアには合計9,999件の口コミが投稿されています。カテゴリーを絞り込んで探してみましょう。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -225,8 +226,7 @@ class _MapScreenState extends State<MapScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Padding(
-                      padding:
-                          const EdgeInsets.fromLTRB(16, 12, 16, 10),
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14),
                         decoration: BoxDecoration(
@@ -277,15 +277,13 @@ class _MapScreenState extends State<MapScreen> {
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: _filters.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(width: 8),
+                          separatorBuilder: (_, __) => const SizedBox(width: 8),
                           itemBuilder: (context, index) {
                             final f = _filters[index];
                             return CategoryChip(
                               label: f,
                               selected: f == _selectedFilter,
-                              onTap: () =>
-                                  setState(() => _selectedFilter = f),
+                              onTap: () => setState(() => _selectedFilter = f),
                             );
                           },
                         ),

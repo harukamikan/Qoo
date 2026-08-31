@@ -57,8 +57,17 @@ class CommentBubble extends StatelessWidget {
                   ? CrossAxisAlignment.end
                   : CrossAxisAlignment.center),
           children: isBottomPointer
-              ? [bubble, Transform.translate(offset: const Offset(0, -1), child: pointer)]
-              : [Transform.translate(offset: const Offset(0, 1), child: Transform.rotate(angle: 3.14159, child: pointer)), bubble],
+              ? [
+                  bubble,
+                  Transform.translate(
+                      offset: const Offset(0, -1), child: pointer)
+                ]
+              : [
+                  Transform.translate(
+                      offset: const Offset(0, 1),
+                      child: Transform.rotate(angle: 3.14159, child: pointer)),
+                  bubble
+                ],
         ),
       ),
     );
