@@ -7,6 +7,11 @@ import 'gacha/gacha_screen.dart';
 import 'gacha/coin_manager.dart';
 import 'gacha/inventory_manager.dart';
 import 'gacha/collection_screen.dart';
+import '../widgets/post_tips_dialog.dart';
+import '../widgets/photo_capture_sheet.dart';
+import 'package:latlong2/latlong.dart' as ll;
+import 'package:image_picker/image_picker.dart';
+import '../services/photo_upload_service.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -23,7 +28,7 @@ class _HomeShellState extends State<HomeShell> {
     final pages = [
       const MapPage(),
       const GachaScreen(),
-      const ReviewFormPage(),
+      const PostSelectionPage(),
       const SavedPage(),
       const ProfilePage(),
     ];
@@ -129,6 +134,135 @@ class SearchPage extends StatelessWidget {
         style: TextStyle(
           fontSize: 32,
           color: AppColors.navy,
+        ),
+      ),
+    );
+  }
+}
+class PostSelectionPage extends StatelessWidget {
+  const PostSelectionPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const PageHeader('投稿する'),
+              const SizedBox(height: 32),
+              _PostCard(
+                icon: Icons.chat_bubble_outline,
+                title: 'Tips投稿',
+                description: '旅先で役立つ情報や困りごとをシェアしよう',
+                onTap: () => showPostTipsDialog(
+                  context,
+                  targetPosition: const ll.LatLng(33.5902, 130.4017),
+  currentCenter: const ll.LatLng(33.5902, 130.4017),
+                  onPosted: (_) {},
+                ),
+              ),
+              const SizedBox(height: 16),
+              _PostCard(
+  icon: Icons.photo_camera_outlined,
+  title: '旅行写真',
+  description: '旅の思い出を写真で残そう',
+  onTap: () => showPhotoCaptureSheet(
+    context,
+    onTakePhoto: () async {
+      final picker = ImagePicker();
+      final photo = await picker.pickImage(source: ImageSource.camera);
+      if (photo == null) return;
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('アップロード中...')),
+      );
+      final result = await PhotoUploadService.uploadAndSave(
+        bytes: await photo.readAsBytes(),
+        filename: photo.name,
+        position: const ll.LatLng(33.5902, 130.4017),
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result != null ? '写真を投稿しました' : 'アップロードに失敗しました')),
+      );
+    },
+    onPickFromGallery: () async {
+      final picker = ImagePicker();
+      final photo = await picker.pickImage(source: ImageSource.gallery);
+      if (photo == null) return;
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('アップロード中...')),
+      );
+      final result = await PhotoUploadService.uploadAndSave(
+        bytes: await photo.readAsBytes(),
+        filename: photo.name,
+        position: const ll.LatLng(33.5902, 130.4017),
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result != null ? '写真を投稿しました' : 'アップロードに失敗しました')),
+      );
+    },
+  ),
+),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PostCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String description;
+  final VoidCallback onTap;
+
+  const _PostCard({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Row(
+            children: [
+              Icon(icon, size: 48, color: AppColors.primary),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary)),
+                    const SizedBox(height: 4),
+                    Text(description,
+                        style: const TextStyle(
+                            fontSize: 14, color: AppColors.textGrey)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.textGrey),
+            ],
+          ),
         ),
       ),
     );
