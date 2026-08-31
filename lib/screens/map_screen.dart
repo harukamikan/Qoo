@@ -17,8 +17,7 @@ import '../widgets/grouped_bubble_marker.dart';
 import '../widgets/post_tips_dialog.dart';
 import '../widgets/location_tips_modal.dart';
 import 'package:image_picker/image_picker.dart';
-import '../services/cloudinary_service.dart';
-import '../services/device_user_service.dart';
+import '../services/photo_upload_service.dart';
 import '../widgets/photo_capture_sheet.dart';
 
 // main.dart に定義されている AppColors をそのまま参照する想定。
@@ -750,50 +749,48 @@ class _MapPageState extends State<MapPage> {
     );
   }
     Future<void> _handleTakePhoto() async {
-    final picker = ImagePicker();
-    final XFile? photo = await picker.pickImage(source: ImageSource.camera);
-    if (photo == null) return;
+  final picker = ImagePicker();
+  final XFile? photo = await picker.pickImage(source: ImageSource.camera);
+  if (photo == null) return;
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('アップロード中...')),
-    );
+  if (!mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('アップロード中...')),
+  );
 
-    final imageUrl = await CloudinaryService.uploadImageBytes(
-  await photo.readAsBytes(),
-  filename: photo.name,
-);
-    if (imageUrl == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('アップロードに失敗しました')),
-      );
-      return;
-    }
+  final result = await PhotoUploadService.uploadAndSave(
+    bytes: await photo.readAsBytes(),
+    filename: photo.name,
+    position: _currentCenter,
+  );
 
-    final userId = await DeviceUserService.getOrCreateDeviceUserId();
+  if (!mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(result != null ? '写真を投稿しました' : 'アップロードに失敗しました')),
+  );
+}
 
-    await FirebaseFirestore.instance.collection('travel_photos').add({
-      'imageUrl': imageUrl,
-      'latitude': _currentCenter.latitude,
-      'longitude': _currentCenter.longitude,
-      'userId': userId,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+Future<void> _handlePickFromGallery() async {
+  final picker = ImagePicker();
+  final XFile? photo = await picker.pickImage(source: ImageSource.gallery);
+  if (photo == null) return;
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('写真を投稿しました')),
-    );
-  }
+  if (!mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('アップロード中...')),
+  );
 
-    Future<void> _handlePickFromGallery() async {
-    // TODO: アルバムから選ぶ場合は場所選択画面へ（次のステップで実装）
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('この機能は近日対応予定です')),
-    );
-  }
+  final result = await PhotoUploadService.uploadAndSave(
+    bytes: await photo.readAsBytes(),
+    filename: photo.name,
+    position: _currentCenter,
+  );
+
+  if (!mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(result != null ? '写真を投稿しました' : 'アップロードに失敗しました')),
+  );
+}
 
   void _showPhotoDetail(TravelPhoto photo) {
     showDialog(

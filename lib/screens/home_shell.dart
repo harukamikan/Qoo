@@ -5,6 +5,8 @@ import 'gacha/gacha_screen.dart';
 import '../widgets/post_tips_dialog.dart';
 import '../widgets/photo_capture_sheet.dart';
 import 'package:latlong2/latlong.dart' as ll;
+import 'package:image_picker/image_picker.dart';
+import '../services/photo_upload_service.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -115,15 +117,49 @@ class PostSelectionPage extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               _PostCard(
-                icon: Icons.photo_camera_outlined,
-                title: '旅行写真',
-                description: '旅の思い出を写真で残そう',
-                onTap: () => showPhotoCaptureSheet(
-                  context,
-                  onTakePhoto: () {},
-                  onPickFromGallery: () {},
-                ),
-              ),
+  icon: Icons.photo_camera_outlined,
+  title: '旅行写真',
+  description: '旅の思い出を写真で残そう',
+  onTap: () => showPhotoCaptureSheet(
+    context,
+    onTakePhoto: () async {
+      final picker = ImagePicker();
+      final photo = await picker.pickImage(source: ImageSource.camera);
+      if (photo == null) return;
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('アップロード中...')),
+      );
+      final result = await PhotoUploadService.uploadAndSave(
+        bytes: await photo.readAsBytes(),
+        filename: photo.name,
+        position: const ll.LatLng(33.5902, 130.4017),
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result != null ? '写真を投稿しました' : 'アップロードに失敗しました')),
+      );
+    },
+    onPickFromGallery: () async {
+      final picker = ImagePicker();
+      final photo = await picker.pickImage(source: ImageSource.gallery);
+      if (photo == null) return;
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('アップロード中...')),
+      );
+      final result = await PhotoUploadService.uploadAndSave(
+        bytes: await photo.readAsBytes(),
+        filename: photo.name,
+        position: const ll.LatLng(33.5902, 130.4017),
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result != null ? '写真を投稿しました' : 'アップロードに失敗しました')),
+      );
+    },
+  ),
+),
             ],
           ),
         ),
