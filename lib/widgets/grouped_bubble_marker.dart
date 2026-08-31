@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/nearby_comment.dart';
 import '../theme/app_colors.dart';
+import '../screens/gacha/gacha_item.dart';
 
 class GroupedBubbleMarker extends StatelessWidget {
   final List<NearbyComment> comments;
@@ -10,6 +11,7 @@ class GroupedBubbleMarker extends StatelessWidget {
   final VoidCallback onTap;
   final bool Function(String) isHelpfulByMe;
   final void Function(NearbyComment) onHelpfulTap;
+  final GachaItem? markerSkin;
 
   const GroupedBubbleMarker({
     super.key,
@@ -20,6 +22,7 @@ class GroupedBubbleMarker extends StatelessWidget {
     required this.onTap,
     required this.isHelpfulByMe,
     required this.onHelpfulTap,
+    this.markerSkin,
   });
 
   @override
@@ -187,7 +190,19 @@ class GroupedBubbleMarker extends StatelessWidget {
             painter: TrianglePainter(color: Colors.white),
           ),
           const SizedBox(height: 1),
-          Icon(Icons.place, color: categoryColor, size: 26),
+          if (markerSkin != null)
+            Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: markerSkin!.rarity.color, width: 1.5),
+                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 3)],
+              ),
+              child: Text(markerSkin!.iconOrAsset, style: const TextStyle(fontSize: 16)),
+            )
+          else
+            Icon(Icons.place, color: categoryColor, size: 26),
         ],
       ),
     );

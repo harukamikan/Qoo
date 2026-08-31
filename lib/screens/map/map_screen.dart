@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../models/place.dart';
+import '../gacha/gacha_item.dart';
 import '../../state/app_data.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/category_chip.dart';
 import '../review_detail/review_detail_screen.dart';
+import '../gacha/coin_manager.dart';
+import '../gacha/inventory_manager.dart';
 import 'comment_bubble.dart';
 import 'map_painter.dart';
 
@@ -140,14 +143,149 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  /// 装備中マーカースキンのバッジをコメント吹き出しの右上に重ねて表示する
+  Widget _decorateWithMarkerSkin(Widget bubble, GachaItem? markerSkin) {
+    if (markerSkin == null) return bubble;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        bubble,
+        Positioned(
+          top: -6,
+          right: -6,
+          child: Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: markerSkin.rarity.color, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 3,
+                ),
+              ],
+            ),
+            child: Text(markerSkin.iconOrAsset, style: const TextStyle(fontSize: 12)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 装備中アバタースキンを使った「現在地」マーカー
+  Widget _buildSelfAvatarMarker(GachaItem? avatarSkin) {
+    final ringColor = avatarSkin != null ? avatarSkin.rarity.color : AppColors.primary;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white,
+            border: Border.all(color: ringColor, width: 3),
+            boxShadow: [
+              BoxShadow(color: ringColor.withValues(alpha: 0.5), blurRadius: 12),
+            ],
+          ),
+          child: Center(
+            child: Text(
+              avatarSkin?.iconOrAsset ?? '📍',
+              style: const TextStyle(fontSize: 26),
+            ),
+          ),
+        ),
+        const SizedBox(height: 2),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Text(
+            '現在地',
+            style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final inventoryData = InventoryProvider.of(context);
+
     return AnimatedBuilder(
-      animation: AppData.instance,
+      animation: Listenable.merge([AppData.instance, inventoryData]),
       builder: (context, _) {
-        final p1 = AppData.instance.places.firstWhere((p) => p.id == 'p1');
-        final p2 = AppData.instance.places.firstWhere((p) => p.id == 'p2');
-        final p5 = AppData.instance.places.firstWhere((p) => p.id == 'p5');
+        final p1 = AppData.instance.places.firstWhere(
+          (p) => p.id == 'p1',
+          orElse: () => AppData.instance.places.isNotEmpty
+              ? AppData.instance.places.first
+              : Place(
+                  id: 'p1',
+                  name: '一楽ラーメン',
+                  category: 'グルメ',
+                  quote: '',
+                  rating: 4.8,
+                  ratingCount: 100,
+                  locationLabel: '福岡',
+                  footerLabel: '4.8',
+                  footerIconKey: 'star',
+                  photoIconKey: 'ramen',
+                  gradientColors: const [0xFF5A3320, 0xFFB5651D],
+                  isSaved: true,
+                  lat: 33.5902,
+                  lng: 130.4017,
+                ),
+        );
+        final p2 = AppData.instance.places.firstWhere(
+          (p) => p.id == 'p2',
+          orElse: () => AppData.instance.places.isNotEmpty
+              ? AppData.instance.places.first
+              : Place(
+                  id: 'p2',
+                  name: '東京タワー',
+                  category: '文化',
+                  quote: '',
+                  rating: 4.6,
+                  ratingCount: 100,
+                  locationLabel: '東京',
+                  footerLabel: '',
+                  footerIconKey: '',
+                  photoIconKey: 'city',
+                  gradientColors: const [0xFF0D1B4C, 0xFF3A4A9A],
+                  isSaved: true,
+                  lat: 35.6586,
+                  lng: 139.7454,
+                ),
+        );
+        final p5 = AppData.instance.places.firstWhere(
+          (p) => p.id == 'p5',
+          orElse: () => AppData.instance.places.isNotEmpty
+              ? AppData.instance.places.first
+              : Place(
+                  id: 'p5',
+                  name: '新宿駅 東口',
+                  category: '交通',
+                  quote: '',
+                  rating: 2.1,
+                  ratingCount: 50,
+                  locationLabel: '東京',
+                  footerLabel: '',
+                  footerIconKey: '',
+                  photoIconKey: 'train',
+                  gradientColors: const [0xFF555555, 0xFF8A8A8A],
+                  isSaved: false,
+                  lat: 35.6896,
+                  lng: 139.7006,
+                ),
+        );
+
+        final markerSkin = inventoryData.getEquippedItem(GachaItemType.markerSkin);
+        final avatarSkin = inventoryData.getEquippedItem(GachaItemType.avatarSkin);
 
         return Scaffold(
           body: Stack(
@@ -162,30 +300,36 @@ class _MapScreenState extends State<MapScreen> {
                 Positioned(
                   left: 20,
                   top: 300,
-                  child: CommentBubble(
-                    background: AppColors.primary,
-                    borderColor: Colors.black.withValues(alpha: 0.85),
-                    onTap: () => _openDetail(p1.id),
-                    child: const _BubbleContent(
-                      text: 'いいね！このご飯は',
-                      icon: Icons.restaurant,
-                      textColor: Colors.white,
+                  child: _decorateWithMarkerSkin(
+                    CommentBubble(
+                      background: AppColors.primary,
+                      borderColor: Colors.black.withValues(alpha: 0.85),
+                      onTap: () => _openDetail(p1.id),
+                      child: const _BubbleContent(
+                        text: 'いいね！このご飯は',
+                        icon: Icons.restaurant,
+                        textColor: Colors.white,
+                      ),
                     ),
+                    markerSkin,
                   ),
                 ),
               if (_bubbleVisible('文化'))
                 Positioned(
                   right: 16,
                   top: 380,
-                  child: CommentBubble(
-                    background: AppColors.navy,
-                    borderColor: Colors.black.withValues(alpha: 0.85),
-                    onTap: () => _openDetail(p2.id),
-                    child: const _BubbleContent(
-                      text: 'すごい！歴史を感じる',
-                      icon: Icons.account_balance,
-                      textColor: Colors.white,
+                  child: _decorateWithMarkerSkin(
+                    CommentBubble(
+                      background: AppColors.navy,
+                      borderColor: Colors.black.withValues(alpha: 0.85),
+                      onTap: () => _openDetail(p2.id),
+                      child: const _BubbleContent(
+                        text: 'すごい！歴史を感じる',
+                        icon: Icons.account_balance,
+                        textColor: Colors.white,
+                      ),
                     ),
+                    markerSkin,
                   ),
                 ),
               Positioned(
@@ -207,17 +351,27 @@ class _MapScreenState extends State<MapScreen> {
                 Positioned(
                   left: 30,
                   top: 520,
-                  child: CommentBubble(
-                    background: AppColors.primary,
-                    borderColor: Colors.black.withValues(alpha: 0.85),
-                    onTap: () => _openDetail(p5.id),
-                    child: const _BubbleContent(
-                      text: 'ムリ',
-                      icon: Icons.tram,
-                      textColor: Colors.white,
+                  child: _decorateWithMarkerSkin(
+                    CommentBubble(
+                      background: AppColors.primary,
+                      borderColor: Colors.black.withValues(alpha: 0.85),
+                      onTap: () => _openDetail(p5.id),
+                      child: const _BubbleContent(
+                        text: 'ムリ',
+                        icon: Icons.tram,
+                        textColor: Colors.white,
+                      ),
                     ),
+                    markerSkin,
                   ),
                 ),
+
+              // ---- 自分の現在地アバター ----
+              Positioned(
+                left: MediaQuery.of(context).size.width / 2 - 28,
+                top: 440,
+                child: _buildSelfAvatarMarker(avatarSkin),
+              ),
 
               // ---- 上部UI（検索バー・フィルター・通知バナー） ----
               SafeArea(
@@ -259,11 +413,14 @@ class _MapScreenState extends State<MapScreen> {
                             InkWell(
                               onTap: () => widget.onSwitchTab(4),
                               borderRadius: BorderRadius.circular(30),
-                              child: const CircleAvatar(
+                              child: CircleAvatar(
                                 radius: 17,
                                 backgroundColor: AppColors.primaryLight,
-                                child: Icon(Icons.person,
-                                    color: AppColors.primary, size: 20),
+                                child: avatarSkin != null
+                                    ? Text(avatarSkin.iconOrAsset,
+                                        style: const TextStyle(fontSize: 16))
+                                    : const Icon(Icons.person,
+                                        color: AppColors.primary, size: 20),
                               ),
                             ),
                           ],
