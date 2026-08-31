@@ -10,6 +10,7 @@ import '../utils/geo_utils.dart';
 import '../theme/app_colors.dart';
 import '../widgets/search_bar_widget.dart';
 import '../models/nearby_comment.dart';
+import '../models/travel_photo.dart';
 import '../widgets/current_location_dot.dart';
 import '../widgets/grouped_bubble_marker.dart';
 //import '../widgets/report_dialog.dart';
@@ -50,6 +51,7 @@ class _MapPageState extends State<MapPage> {
   final MapController _mapController = MapController();
   ll.LatLng _currentCenter = fukuokaFallback;
   List<NearbyComment> _nearbyComments = [];
+  List<TravelPhoto> _nearbyPhotos = [];
   bool _isLoading = true;
   final _alertService = NearbyAlertService();
   LocationIssue _locationIssue = LocationIssue.none;
@@ -206,12 +208,21 @@ class _MapPageState extends State<MapPage> {
       // 「ぐるぐる止まったまま」にならないよう、必ずここでエラーを吸収する。
       commentsError = '投稿データを取得できませんでした。右下のボタンで再読み込みしてください。';
     }
+     List<TravelPhoto> photos = [];
+    try {
+      photos = await _fetchNearbyPhotos(
+        center,
+      ).timeout(const Duration(milliseconds: 2500), onTimeout: () => []);
+    } catch (e) {
+      debugPrint('Firestore photo fetch error: $e');
+    }
 
     if (!mounted) return;
     setState(() {
       _currentCenter = center;
       _locationIssue = locationIssue;
       _nearbyComments = comments;
+      _nearbyPhotos = photos;
       _commentsError = commentsError;
       _isLoading = false;
     });
@@ -329,6 +340,34 @@ class _MapPageState extends State<MapPage> {
       }
     }
 
+    results.sort((a, b) => a.distanceMeters.compareTo(b.distanceMeters));
+    return results;
+  }
+  
+  Future<List<TravelPhoto>> _fetchNearbyPhotos(ll.LatLng center) async {
+    final snapshot =
+        await FirebaseFirestore.instance.collection('travel_photos').get();
+    final results = <TravelPhoto>[];
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final lat = (data['latitude'] as num?)?.toDouble();
+      final lng = (data['longitude'] as num?)?.toDouble();
+      final imageUrl = data['imageUrl'] as String?;
+      if (lat == null || lng == null || imageUrl == null) continue;
+      final point = ll.LatLng(lat, lng);
+      final distance = distanceMeters(center, point);
+      if (distance <= nearbyRadiusMeters) {
+        results.add(
+          TravelPhoto(
+            id: doc.id,
+            imageUrl: imageUrl,
+            position: point,
+            userId: data['userId'] as String? ?? '',
+            distanceMeters: distance,
+          ),
+        );
+      }
+    }
     results.sort((a, b) => a.distanceMeters.compareTo(b.distanceMeters));
     return results;
   }
@@ -514,6 +553,7 @@ class _MapPageState extends State<MapPage> {
                     height: 24,
                     child: const CurrentLocationDot(),
                   ),
+                  if (!_isPhotoMode)
                   for (final entry in groupedComments.entries)
                     if (entry.value.isNotEmpty)
                       Marker(
@@ -522,33 +562,56 @@ class _MapPageState extends State<MapPage> {
                         height: 125,
                         alignment: Alignment.bottomCenter,
                         child: GroupedBubbleMarker(
-                          comments: entry.value,
-                          locKey: entry.key,
-                          carouselIndex: _carouselIndices[entry.key] ?? 0,
-                          getCategoryColor: _getCategoryColor,
-                          isHelpfulByMe: _isHelpfulByMe,
-                          onHelpfulTap: (c) => _toggleHelpful(c),
-                          onTap: () => showLocationTipsModal(
-                            context,
-                            commentsInLoc: entry.value,
-                            currentCenter: _currentCenter,
-                            getAllComments: () => _nearbyComments,
-                            toLocationKey: _toLocationKey,
-                            getCategoryColor: _getCategoryColor,
-                            isHelpfulByMe: _isHelpfulByMe,
-                            onDeleteTip: _deleteSingleTip,
-                            onToggleHelpful: _toggleHelpful,
-                            onPosted: (newTip) {
-                              setState(() {
-                                _nearbyComments.insert(0, newTip);
-                                _carouselIndices[
-                                    _toLocationKey(newTip.position)] = 0;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
+                         comments: entry.value,
+              locKey: entry.key,
+              carouselIndex: _carouselIndices[entry.key] ?? 0,
+              getCategoryColor: _getCategoryColor,
+              isHelpfulByMe: _isHelpfulByMe,
+              onHelpfulTap: (c) => _toggleHelpful(c),
+              onTap: () => showLocationTipsModal(
+                context,
+                commentsInLoc: entry.value,
+                currentCenter: _currentCenter,
+                getAllComments: () => _nearbyComments,
+                toLocationKey: _toLocationKey,
+                getCategoryColor: _getCategoryColor,
+                isHelpfulByMe: _isHelpfulByMe,
+                onDeleteTip: _deleteSingleTip,
+                onToggleHelpful: _toggleHelpful,
+                onPosted: (newTip) {
+                  setState(() {
+                    _nearbyComments.insert(0, newTip);
+                    _carouselIndices[
+                        _toLocationKey(newTip.position)] = 0;
+                  });
+                },
+              ),
+            ),
+          ),
+    if (_isPhotoMode)
+      for (final photo in _nearbyPhotos)
+        Marker(
+          point: photo.position,
+          width: 72,
+          height: 72,
+          child: GestureDetector(
+                        onTap: () => _showPhotoDetail(photo),
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 3),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black26, blurRadius: 6),
                 ],
+                image: DecorationImage(
+                  image: NetworkImage(photo.imageUrl),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ),
+        ),
+  ],
               ),
             ],
           ),
@@ -724,11 +787,37 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-  Future<void> _handlePickFromGallery() async {
+    Future<void> _handlePickFromGallery() async {
     // TODO: アルバムから選ぶ場合は場所選択画面へ（次のステップで実装）
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('この機能は近日対応予定です')),
+    );
+  }
+
+  void _showPhotoDetail(TravelPhoto photo) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.network(
+                photo.imageUrl,
+                fit: BoxFit.contain,
+              ),
+            ),
+            const SizedBox(height: 12),
+            IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.close, color: Colors.white, size: 32),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
