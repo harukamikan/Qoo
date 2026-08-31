@@ -86,13 +86,37 @@ class AppData extends ChangeNotifier {
     return savedPlaces.where((p) => p.category == category).toList();
   }
 
-  Place placeById(String id) => places.firstWhere((p) => p.id == id);
+  Place placeById(String id) {
+    return places.firstWhere(
+      (p) => p.id == id,
+      orElse: () => places.isNotEmpty
+          ? places.first
+          : Place(
+              id: id,
+              name: 'スポット',
+              category: 'General',
+              quote: '',
+              rating: 0.0,
+              ratingCount: 0,
+              locationLabel: '',
+              footerLabel: '',
+              footerIconKey: '',
+              photoIconKey: '',
+              gradientColors: const [0xFF000000, 0xFF333333],
+              isSaved: false,
+              lat: 35.6812,
+              lng: 139.7671,
+            ),
+    );
+  }
 
   void toggleSaved(String placeId) {
-    final place = places.firstWhere((p) => p.id == placeId);
-    place.isSaved = !place.isSaved;
-    StorageService.instance.savePlaces(places);
-    notifyListeners();
+    final index = places.indexWhere((p) => p.id == placeId);
+    if (index != -1) {
+      places[index].isSaved = !places[index].isSaved;
+      StorageService.instance.savePlaces(places);
+      notifyListeners();
+    }
   }
 
   List<Place> searchPlaces(String query) {
