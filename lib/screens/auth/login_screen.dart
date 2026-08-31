@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../services/auth_service.dart';
+import 'email_login_screen.dart';
+import 'email_signup_screen.dart';
 
-/// ログイン画面。Googleアカウントでのサインインのみを提供する。
-///
-/// サインインに成功すると [AuthService.authStateChanges] が発火し、
-/// 上位の [AuthGate] が自動的に次の画面へ切り替える。
+/// ログイン方法の選択画面。
+/// 「ログイン」「新規登録」「Googleでログイン」の3つの入口を提供する。
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -17,11 +17,11 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
 
-  Future<void> _signIn() async {
+  /// Googleでログイン（ibukiさん実装。承認ドメイン設定が整えば動作する）。
+  Future<void> _signInWithGoogle() async {
     setState(() => _loading = true);
     try {
       await AuthService.instance.signInWithGoogle();
-      // 画面遷移は AuthGate 側で行う。
     } on GoogleSignInException catch (e) {
       if (e.code != GoogleSignInExceptionCode.canceled) {
         _showError('サインインに失敗しました（${e.code.name}）');
@@ -63,16 +63,53 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: TextStyle(color: Colors.black54),
               ),
               const SizedBox(height: 48),
-              _loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : OutlinedButton.icon(
-                      onPressed: _signIn,
-                      icon: const Icon(Icons.login),
-                      label: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Text('Googleでログイン'),
-                      ),
+              if (_loading)
+                const Center(child: CircularProgressIndicator())
+              else ...[
+                FilledButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const EmailLoginScreen(),
                     ),
+                  ),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Text('ログイン'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const EmailSignupScreen(),
+                    ),
+                  ),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Text('新規登録'),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: const [
+                    Expanded(child: Divider()),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: Text('または', style: TextStyle(color: Colors.black45)),
+                    ),
+                    Expanded(child: Divider()),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                OutlinedButton.icon(
+                  onPressed: _signInWithGoogle,
+                  icon: const Icon(Icons.login),
+                  label: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Text('Googleでログイン'),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

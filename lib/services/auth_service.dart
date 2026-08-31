@@ -51,7 +51,21 @@ class AuthService {
     final credential = GoogleAuthProvider.credential(idToken: auth.idToken);
     return _auth.signInWithCredential(credential);
   }
+  /// メールアドレスとパスワードで新規登録する。
+  Future<UserCredential> signUpWithEmail(String email, String password) async {
+    return _auth.createUserWithEmailAndPassword(
+      email: email.trim(),
+      password: password,
+    );
+  }
 
+  /// メールアドレスとパスワードでログインする。
+  Future<UserCredential> signInWithEmail(String email, String password) async {
+    return _auth.signInWithEmailAndPassword(
+      email: email.trim(),
+      password: password,
+    );
+  }
   /// サインアウト（Firebase と Google の両方）。
   Future<void> signOut() async {
     try {
