@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import 'map_screen.dart'; // 本物のMapPage（Firestore連携・現在地・Tips投稿など）
 import 'gacha/gacha_screen.dart';
+import '../widgets/post_tips_dialog.dart';
+import '../widgets/photo_capture_sheet.dart';
+import 'package:latlong2/latlong.dart' as ll;
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -16,7 +19,7 @@ class _HomeShellState extends State<HomeShell> {
   final pages = const [
     MapPage(),
     GachaScreen(),
-    ReviewFormPage(),
+    PostSelectionPage(),
     SavedPage(),
     ProfilePage(),
   ];
@@ -84,6 +87,101 @@ class SearchPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const Center(
       child: Text('検索', style: TextStyle(fontSize: 32, color: AppColors.navy)));
+}
+class PostSelectionPage extends StatelessWidget {
+  const PostSelectionPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const PageHeader('投稿する'),
+              const SizedBox(height: 32),
+              _PostCard(
+                icon: Icons.chat_bubble_outline,
+                title: 'Tips投稿',
+                description: '旅先で役立つ情報や困りごとをシェアしよう',
+                onTap: () => showPostTipsDialog(
+                  context,
+                  targetPosition: const ll.LatLng(33.5902, 130.4017),
+  currentCenter: const ll.LatLng(33.5902, 130.4017),
+                  onPosted: (_) {},
+                ),
+              ),
+              const SizedBox(height: 16),
+              _PostCard(
+                icon: Icons.photo_camera_outlined,
+                title: '旅行写真',
+                description: '旅の思い出を写真で残そう',
+                onTap: () => showPhotoCaptureSheet(
+                  context,
+                  onTakePhoto: () {},
+                  onPickFromGallery: () {},
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PostCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String description;
+  final VoidCallback onTap;
+
+  const _PostCard({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Row(
+            children: [
+              Icon(icon, size: 48, color: AppColors.primary),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary)),
+                    const SizedBox(height: 4),
+                    Text(description,
+                        style: const TextStyle(
+                            fontSize: 14, color: AppColors.textGrey)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.textGrey),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class ReviewFormPage extends StatefulWidget {
