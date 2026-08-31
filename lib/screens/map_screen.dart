@@ -12,9 +12,13 @@ import '../widgets/search_bar_widget.dart';
 import '../models/nearby_comment.dart';
 import '../widgets/current_location_dot.dart';
 import '../widgets/grouped_bubble_marker.dart';
-import '../widgets/report_dialog.dart';
+//import '../widgets/report_dialog.dart';
 import '../widgets/post_tips_dialog.dart';
 import '../widgets/location_tips_modal.dart';
+import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 // main.dart に定義されている AppColors をそのまま参照する想定。
 // 参照できない場合は `import '../main.dart';` か、
@@ -389,7 +393,7 @@ class _MapPageState extends State<MapPage> {
     });
     setModalState(() {});
 
-    if (!mounted) return;
+    if (!context.mounted) return;
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Tipsを削除しました')));
