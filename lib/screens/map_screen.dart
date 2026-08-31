@@ -15,10 +15,10 @@ import '../widgets/grouped_bubble_marker.dart';
 //import '../widgets/report_dialog.dart';
 import '../widgets/post_tips_dialog.dart';
 import '../widgets/location_tips_modal.dart';
-import 'package:flutter/material.dart';
-import 'dart:io';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:image_picker/image_picker.dart';
+import '../services/cloudinary_service.dart';
+import '../services/device_user_service.dart';
+import '../widgets/photo_capture_sheet.dart';
 
 // main.dart に定義されている AppColors をそのまま参照する想定。
 // 参照できない場合は `import '../main.dart';` か、
@@ -57,6 +57,9 @@ class _MapPageState extends State<MapPage> {
 
   String _selectedCategoryFilter = 'All';
   String _searchKeyword = '';
+  // --- 地図モード（Tips表示 / 写真表示の切り替え） ---
+  bool _isPhotoMode = false; // false = Tips(💬)モード, true = 写真(📷)モード
+
   final List<String> _categoryFilterList = [
     'All',
     'Food',
@@ -411,22 +414,56 @@ class _MapPageState extends State<MapPage> {
   }
 
   Widget _mapSearch() => Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: .94),
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 12),
+                ],
+              ),
+              child: SearchBarWidget(
+                showCategoryChips: false,
+                onSearchChanged: (query, category) {
+                  setState(() {
+                    _searchKeyword = query;
+                  });
+                },
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          _modeToggleButton(),
+        ],
+      ),
+    );
+
+  Widget _modeToggleButton() => Container(
+        width: 48,
+        height: 48,
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: .94),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 12)],
+          shape: BoxShape.circle,
+          boxShadow: const [
+            BoxShadow(color: Colors.black12, blurRadius: 12),
+          ],
         ),
-        child: SearchBarWidget(
-          showCategoryChips: false, // カテゴリチップは下の既存フィルタで表示済み
-          onSearchChanged: (query, category) {
+        child: IconButton(
+          icon: Text(
+            _isPhotoMode ? '💬' : '📷',
+            style: const TextStyle(fontSize: 20),
+          ),
+          onPressed: () {
             setState(() {
-              _searchKeyword = query;
+              _isPhotoMode = !_isPhotoMode;
             });
           },
         ),
       );
-
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -621,26 +658,77 @@ class _MapPageState extends State<MapPage> {
             child: const Icon(Icons.my_location),
           ),
           const SizedBox(height: 12),
-          FloatingActionButton.extended(
-            heroTag: 'post_tips_btn',
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            onPressed: () => showPostTipsDialog(
-              context,
-              targetPosition: _currentCenter,
-              currentCenter: _currentCenter,
-              onPosted: (newTip) {
-                setState(() {
-                  _nearbyComments.insert(0, newTip);
-                  _carouselIndices[_toLocationKey(newTip.position)] = 0;
-                });
-              },
-            ),
-            icon: const Icon(Icons.add_comment),
-            label: const Text('現在地にTips投稿'),
+         FloatingActionButton.extended(
+  heroTag: 'post_tips_btn',
+  backgroundColor: AppColors.primary,
+  foregroundColor: Colors.white,
+  onPressed: _isPhotoMode
+      ? () => showPhotoCaptureSheet(
+           context,
+            onTakePhoto: _handleTakePhoto,
+            onPickFromGallery: _handlePickFromGallery,
+      )
+      : () => showPostTipsDialog(
+            context,
+            targetPosition: _currentCenter,
+            currentCenter: _currentCenter,
+            onPosted: (newTip) {
+              setState(() {
+                _nearbyComments.insert(0, newTip);
+                _carouselIndices[_toLocationKey(newTip.position)] = 0;
+              });
+            },
           ),
+  icon: Icon(_isPhotoMode ? Icons.camera_alt : Icons.add_comment),
+  label: Text(_isPhotoMode ? '写真を撮る' : '現在地にTips投稿'),
+),
         ],
       ),
+    );
+  }
+    Future<void> _handleTakePhoto() async {
+    final picker = ImagePicker();
+    final XFile? photo = await picker.pickImage(source: ImageSource.camera);
+    if (photo == null) return;
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('アップロード中...')),
+    );
+
+    final imageUrl = await CloudinaryService.uploadImageBytes(
+  await photo.readAsBytes(),
+  filename: photo.name,
+);
+    if (imageUrl == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('アップロードに失敗しました')),
+      );
+      return;
+    }
+
+    final userId = await DeviceUserService.getOrCreateDeviceUserId();
+
+    await FirebaseFirestore.instance.collection('travel_photos').add({
+      'imageUrl': imageUrl,
+      'latitude': _currentCenter.latitude,
+      'longitude': _currentCenter.longitude,
+      'userId': userId,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('写真を投稿しました')),
+    );
+  }
+
+  Future<void> _handlePickFromGallery() async {
+    // TODO: アルバムから選ぶ場合は場所選択画面へ（次のステップで実装）
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('この機能は近日対応予定です')),
     );
   }
 }
