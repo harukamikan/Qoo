@@ -762,10 +762,17 @@ class _MapPageState extends State<MapPage> {
       position: _currentCenter,
     );
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(result != null ? '写真を投稿しました' : 'アップロードに失敗しました')),
-    );
+        if (!mounted) return;
+    if (result != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('写真を投稿しました')),
+      );
+      await _loadEverything(); // 写真リストを更新して即座にマップに反映
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('アップロードに失敗しました')),
+      );
+    }
   }
 
   Future<void> _handlePickFromGallery() async {
@@ -784,10 +791,17 @@ class _MapPageState extends State<MapPage> {
       position: _currentCenter,
     );
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(result != null ? '写真を投稿しました' : 'アップロードに失敗しました')),
-    );
+        if (!mounted) return;
+    if (result != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('写真を投稿しました')),
+      );
+      await _loadEverything(); // 写真リストを更新して即座にマップに反映
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('アップロードに失敗しました')),
+      );
+    }
   }
 
   void _showPhotoDetail(TravelPhoto photo) {

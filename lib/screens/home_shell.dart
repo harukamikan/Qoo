@@ -12,6 +12,8 @@ import '../widgets/photo_capture_sheet.dart';
 import 'package:latlong2/latlong.dart' as ll;
 import 'package:image_picker/image_picker.dart';
 import '../services/photo_upload_service.dart';
+import '../services/user_repository.dart';
+import '../models/user_profile.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -541,16 +543,26 @@ class ProfilePage extends StatelessWidget {
                   // ログイン中のユーザー情報
                   // ------------------------------------------
                   if (user != null) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      user.displayName ?? '名前未設定',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      user.email ?? '',
-                      style: const TextStyle(color: AppColors.textGrey),
-                    ),
-                  ],
+  const SizedBox(height: 16),
+  FutureBuilder<UserProfile?>(
+    future: UserRepository.instance.fetchProfile(user.uid),
+    builder: (context, snap) {
+      final name = snap.data?.name ?? user.displayName ?? '名前未設定';
+      return Column(
+        children: [
+          Text(
+            name,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          Text(
+            user.email ?? '',
+            style: const TextStyle(color: AppColors.textGrey),
+          ),
+        ],
+      );
+    },
+  ),
+],
                 ],
               ),
             ),

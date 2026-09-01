@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// メールアドレス＋パスワードでログインする専用ページ。
 class EmailLoginScreen extends StatefulWidget {
@@ -33,12 +34,20 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
       _passwordController.text,
     );
     if (mounted) Navigator.of(context).pop();  // ← これを追加
-  } on Exception catch (e) {
-    _showError('ログインに失敗しました。メールアドレスとパスワードを確認してください');
+    } on FirebaseAuthException catch (e) {
+    if (e.code == 'invalid-email') {
+      _showError('無効なメールアドレスです');
+    } else if (e.code == 'user-not-found') {
+      _showError('このメールアドレスは登録されていません');
+    } else if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
+      _showError('パスワードが正しくありません');
+    } else {
+      _showError('ログインに失敗しました');
+    }
     debugPrint('signInWithEmail error: $e');
   } finally {
     if (mounted) setState(() => _loading = false);
-  }
+  } 
 }
 
   void _showError(String message) {

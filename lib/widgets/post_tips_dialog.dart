@@ -4,7 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/nearby_comment.dart';
 import '../utils/geo_utils.dart';
 import '../theme/app_colors.dart';
-
+import '../services/auth_service.dart';
+import '../services/user_repository.dart';
 /// Tips投稿ダイアログを表示する。
 ///
 /// 投稿が成功したら [onPosted] に、作成された [NearbyComment] を渡して返す。
@@ -136,6 +137,13 @@ void showPostTipsDialog(
                 ),
                 onPressed: () async {
                   if (contentController.text.trim().isEmpty) return;
+                   // ユーザー名をFirestoreから取得
+  final uid = AuthService.instance.uid;
+  String userName = 'Traveler';
+  if (uid != null) {
+    final profile = await UserRepository.instance.fetchProfile(uid);
+    if (profile != null) userName = profile.name;
+  }
 
                   final placeName = placeController.text.trim().isEmpty
                       ? 'おすすめスポット'
@@ -152,7 +160,7 @@ void showPostTipsDialog(
                           'content': contentController.text.trim(),
                           'latitude': targetPosition.latitude,
                           'longitude': targetPosition.longitude,
-                          'user_name': 'You',
+                          'user_name': userName,
                           'user_country': '🇯🇵',
                           'helpful_count': 1,
                           'created_at': FieldValue.serverTimestamp(),
@@ -167,7 +175,7 @@ void showPostTipsDialog(
                     placeName: placeName,
                     category: selectedCategory,
                     content: contentController.text.trim(),
-                    userName: 'You',
+                    userName: 'userName',
                     userCountry: '🇯🇵',
                     helpfulCount: 1,
                     position: targetPosition,
