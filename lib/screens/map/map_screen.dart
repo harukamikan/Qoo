@@ -9,7 +9,7 @@ import '../gacha/coin_manager.dart';
 import '../gacha/inventory_manager.dart';
 import 'comment_bubble.dart';
 import 'map_painter.dart';
-import 'package:JAM/widgets/liked_tips_bottom_sheet.dart';
+import '../../widgets/liked_tips_bottom_sheet.dart';
 
 /// 画像3に対応する「地図」画面（ボトムナビの初期タブ）。
 class MapScreen extends StatefulWidget {
