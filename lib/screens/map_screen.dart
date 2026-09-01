@@ -769,13 +769,25 @@ class _MapPageState extends State<MapPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('写真を投稿しました')),
       );
-      await _loadEverything(); // 写真リストを更新して即座にマップに反映
+      await _reloadPhotos(); // 写真リストを更新して即座にマップに反映
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('アップロードに失敗しました')),
       );
     }
   }
+  Future<void> _reloadPhotos() async {
+  try {
+    final photos = await _fetchNearbyPhotos(_currentCenter)
+        .timeout(const Duration(milliseconds: 2500), onTimeout: () => []);
+    if (!mounted) return;
+    setState(() {
+      _nearbyPhotos = photos;
+    });
+  } catch (e) {
+    debugPrint('写真リスト更新エラー: $e');
+  }
+}
 
   Future<void> _handlePickFromGallery() async {
     final picker = ImagePicker();
@@ -798,7 +810,7 @@ class _MapPageState extends State<MapPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('写真を投稿しました')),
       );
-      await _loadEverything(); // 写真リストを更新して即座にマップに反映
+      await _reloadPhotos(); // 写真リストを更新して即座にマップに反映
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('アップロードに失敗しました')),
