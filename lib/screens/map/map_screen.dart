@@ -9,6 +9,7 @@ import '../gacha/coin_manager.dart';
 import '../gacha/inventory_manager.dart';
 import 'comment_bubble.dart';
 import 'map_painter.dart';
+import 'package:JAM/widgets/liked_tips_bottom_sheet.dart';
 
 /// 画像3に対応する「地図」画面（ボトムナビの初期タブ）。
 class MapScreen extends StatefulWidget {
@@ -488,7 +489,35 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               ),
 
-              // ---- 右下フローティングボタン ----
+              // ---- 右下 JAM瓶アイコン（ボトムシート開く） ----
+              Positioned(
+                right: 18,
+                bottom: 155,
+                child: GestureDetector(
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                      ),
+                      builder: (context) {
+                        return SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.6,
+                          child: const LikedTipsBottomSheet(),
+                        );
+                      },
+                    );
+                  },
+                  child: Image.asset(
+                    'assets/images/jam_jar.png',
+                    width: 60,
+                    height: 60,
+                  ),
+                ),
+              ),
+
+              // ---- 右下フローティングボタン群 ----
               Positioned(
                 right: 18,
                 bottom: 90,
