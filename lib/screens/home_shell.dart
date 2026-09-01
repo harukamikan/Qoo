@@ -15,6 +15,7 @@ import '../services/photo_upload_service.dart';
 import '../services/user_repository.dart';
 import '../models/user_profile.dart';
 import '../widgets/location_picker_sheet.dart';
+import 'saved/saved_places_screen.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -419,24 +420,9 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
 
 class SavedPage extends StatelessWidget {
   const SavedPage({super.key});
-
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      children: const [
-        PageHeader('保存した場所'),
-
-        Padding(
-          padding: EdgeInsets.all(24),
-          child: Text(
-            'まだ保存した場所がありません',
-            style: TextStyle(
-              color: AppColors.textGrey,
-            ),
-          ),
-        ),
-      ],
-    );
+    return const SavedPlacesScreen(showBackButton: false);
   }
 }
 
