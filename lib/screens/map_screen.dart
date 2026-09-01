@@ -591,13 +591,15 @@ class _MapPageState extends State<MapPage> {
                               ),
                             ),
                       if (_isPhotoMode)
-                        for (final photo in _nearbyPhotos)
+                        for (final entry in _getGroupedPhotos().entries)
                           Marker(
-                            point: photo.position,
+                            point: entry.value.first.position,
                             width: 72,
                             height: 72,
                             child: GestureDetector(
-                              onTap: () => _showPhotoDetail(photo),
+                              onTap: () => entry.value.length == 1
+                                  ? _showPhotoDetail(entry.value.first)
+                                  : _showPhotoListDetail(entry.value),
                               child: Container(
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
@@ -606,7 +608,7 @@ class _MapPageState extends State<MapPage> {
                                     BoxShadow(color: Colors.black26, blurRadius: 6),
                                   ],
                                   image: DecorationImage(
-                                    image: NetworkImage(photo.imageUrl),
+                                    image: NetworkImage(entry.value.first.imageUrl),
                                     fit: BoxFit.cover,
                                   ),
                                 ),
@@ -802,6 +804,68 @@ class _MapPageState extends State<MapPage> {
         const SnackBar(content: Text('アップロードに失敗しました')),
       );
     }
+  }
+    Map<String, List<TravelPhoto>> _getGroupedPhotos() {
+    final Map<String, List<TravelPhoto>> map = {};
+    for (final photo in _nearbyPhotos) {
+      final key = _toLocationKey(photo.position);
+      map.putIfAbsent(key, () => []).add(photo);
+    }
+    return map;
+  }
+
+  void _showPhotoListDetail(List<TravelPhoto> photos) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Text(
+            '${photos.length}枚の写真',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 200,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: photos.length,
+              itemBuilder: (context, index) => GestureDetector(
+                onTap: () {
+                  Navigator.pop(context);
+                  _showPhotoDetail(photos[index]);
+                },
+                child: Container(
+                  width: 160,
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    image: DecorationImage(
+                      image: NetworkImage(photos[index].imageUrl),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
   }
 
   void _showPhotoDetail(TravelPhoto photo) {
