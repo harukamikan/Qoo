@@ -92,10 +92,14 @@ class TranslationService {
         return 'ja';
       case 'English':
         return 'en';
-      case '中文':
-        return 'zh-CN';
       case '한국어':
         return 'ko';
+      case '繁體中文':
+        return 'zh-TW';
+      case '简体中文':
+        return 'zh-CN';
+      case 'ไทย':
+        return 'th';
       default:
         return 'ja'; // フォールバック
     }
