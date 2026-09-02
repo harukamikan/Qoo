@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/auth_service.dart';
 
 /// 通報用のダイアログを表示する汎用関数
 void showReportDialog(BuildContext context, {required String title}) {
@@ -63,6 +64,7 @@ void showReportDialog(BuildContext context, {required String title}) {
                       'title': title,
                       'reason': selectedReason,
                       'reported_at': FieldValue.serverTimestamp(),
+                      'reporter_uid': AuthService.instance.uid ?? 'anonymous',
                     });
                   } catch (e) {
                     debugPrint('通報の保存に失敗: $e');

@@ -5,6 +5,8 @@ import '../models/nearby_comment.dart';
 import '../utils/geo_utils.dart';
 import '../theme/app_colors.dart';
 import '../services/translation_service.dart';
+import '../services/auth_service.dart';
+import '../services/user_repository.dart';
 
 /// Tips投稿ダイアログを表示する。
 ///
@@ -138,6 +140,15 @@ void showPostTipsDialog(
                 onPressed: () async {
                   if (contentController.text.trim().isEmpty) return;
 
+                  // ユーザー名をFirestoreから取得
+                  final uid = AuthService.instance.uid;
+                  String userName = 'Traveler';
+                  if (uid != null) {
+                    final profile =
+                        await UserRepository.instance.fetchProfile(uid);
+                    if (profile != null) userName = profile.name;
+                  }
+
                   final placeName = placeController.text.trim().isEmpty
                       ? 'おすすめスポット'
                       : placeController.text.trim();
@@ -171,7 +182,7 @@ void showPostTipsDialog(
                       'translations': translations,
                       'latitude': targetPosition.latitude,
                       'longitude': targetPosition.longitude,
-                      'user_name': 'You',
+                      'user_name': userName,
                       'user_country': '🇯🇵',
                       'helpful_count': 1,
                       'created_at': FieldValue.serverTimestamp(),
@@ -186,7 +197,7 @@ void showPostTipsDialog(
                     placeName: placeName,
                     category: selectedCategory,
                     content: originalContent,
-                    userName: 'You',
+                    userName: userName,
                     userCountry: '🇯🇵',
                     helpfulCount: 1,
                     position: targetPosition,

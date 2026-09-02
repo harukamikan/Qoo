@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// メールアドレス＋パスワードで新規登録する専用ページ。
 class EmailSignupScreen extends StatefulWidget {
@@ -33,8 +34,16 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
       _passwordController.text,
     );
     if (mounted) Navigator.of(context).pop();  // ← これを追加
-  } on Exception catch (e) {
-    _showError('新規登録に失敗しました。パスワードは6文字以上にしてください');
+  } on FirebaseAuthException catch (e) {
+    if (e.code == 'email-already-in-use') {
+      _showError('このメールアドレスは既に使用されています');
+    } else if (e.code == 'invalid-email') {
+      _showError('無効なメールアドレスです');
+    } else if (e.code == 'weak-password') {
+      _showError('パスワードは6文字以上にしてください');
+    } else {
+      _showError('新規登録に失敗しました');
+    }
     debugPrint('signUpWithEmail error: $e');
   } finally {
     if (mounted) setState(() => _loading = false);

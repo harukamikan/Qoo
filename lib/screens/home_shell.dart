@@ -12,6 +12,10 @@ import '../widgets/photo_capture_sheet.dart';
 import 'package:latlong2/latlong.dart' as ll;
 import 'package:image_picker/image_picker.dart';
 import '../services/photo_upload_service.dart';
+import '../services/user_repository.dart';
+import '../models/user_profile.dart';
+import '../widgets/location_picker_sheet.dart';
+import 'saved/saved_places_screen.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -139,8 +143,15 @@ class SearchPage extends StatelessWidget {
     );
   }
 }
-class PostSelectionPage extends StatelessWidget {
+class PostSelectionPage extends StatefulWidget {
   const PostSelectionPage({super.key});
+
+  @override
+  State<PostSelectionPage> createState() => _PostSelectionPageState();
+}
+
+class _PostSelectionPageState extends State<PostSelectionPage> {
+  ll.LatLng _selectedPosition = const ll.LatLng(33.5902, 130.4017);
 
   @override
   Widget build(BuildContext context) {
@@ -157,58 +168,72 @@ class PostSelectionPage extends StatelessWidget {
                 icon: Icons.chat_bubble_outline,
                 title: 'Tips投稿',
                 description: '旅先で役立つ情報や困りごとをシェアしよう',
-                onTap: () => showPostTipsDialog(
+                onTap: () => showLocationPickerSheet(
                   context,
-                  targetPosition: const ll.LatLng(33.5902, 130.4017),
-  currentCenter: const ll.LatLng(33.5902, 130.4017),
-                  onPosted: (_) {},
+                  initialPosition: _selectedPosition,
+                  onLocationSelected: (position, placeName) {
+                    setState(() => _selectedPosition = position);
+                    showPostTipsDialog(
+                      context,
+                      targetPosition: position,
+                      currentCenter: position,
+                      onPosted: (_) {},
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 16),
               _PostCard(
-  icon: Icons.photo_camera_outlined,
-  title: '旅行写真',
-  description: '旅の思い出を写真で残そう',
-  onTap: () => showPhotoCaptureSheet(
-    context,
-    onTakePhoto: () async {
-      final picker = ImagePicker();
-      final photo = await picker.pickImage(source: ImageSource.camera);
-      if (photo == null) return;
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('アップロード中...')),
-      );
-      final result = await PhotoUploadService.uploadAndSave(
-        bytes: await photo.readAsBytes(),
-        filename: photo.name,
-        position: const ll.LatLng(33.5902, 130.4017),
-      );
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result != null ? '写真を投稿しました' : 'アップロードに失敗しました')),
-      );
-    },
-    onPickFromGallery: () async {
-      final picker = ImagePicker();
-      final photo = await picker.pickImage(source: ImageSource.gallery);
-      if (photo == null) return;
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('アップロード中...')),
-      );
-      final result = await PhotoUploadService.uploadAndSave(
-        bytes: await photo.readAsBytes(),
-        filename: photo.name,
-        position: const ll.LatLng(33.5902, 130.4017),
-      );
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result != null ? '写真を投稿しました' : 'アップロードに失敗しました')),
-      );
-    },
-  ),
-),
+                icon: Icons.photo_camera_outlined,
+                title: '旅行写真',
+                description: '旅の思い出を写真で残そう',
+                onTap: () => showLocationPickerSheet(
+                  context,
+                  initialPosition: _selectedPosition,
+                  onLocationSelected: (position, placeName) {
+                    setState(() => _selectedPosition = position);
+                    showPhotoCaptureSheet(
+                      context,
+                      onTakePhoto: () async {
+                        final picker = ImagePicker();
+                        final photo = await picker.pickImage(source: ImageSource.camera);
+                        if (photo == null) return;
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('アップロード中...')),
+                        );
+                        final result = await PhotoUploadService.uploadAndSave(
+                          bytes: await photo.readAsBytes(),
+                          filename: photo.name,
+                          position: position,
+                        );
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(result != null ? '写真を投稿しました' : 'アップロードに失敗しました')),
+                        );
+                      },
+                      onPickFromGallery: () async {
+                        final picker = ImagePicker();
+                        final photo = await picker.pickImage(source: ImageSource.gallery);
+                        if (photo == null) return;
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('アップロード中...')),
+                        );
+                        final result = await PhotoUploadService.uploadAndSave(
+                          bytes: await photo.readAsBytes(),
+                          filename: photo.name,
+                          position: position,
+                        );
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(result != null ? '写真を投稿しました' : 'アップロードに失敗しました')),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
             ],
           ),
         ),
@@ -395,24 +420,9 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
 
 class SavedPage extends StatelessWidget {
   const SavedPage({super.key});
-
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      children: const [
-        PageHeader('保存した場所'),
-
-        Padding(
-          padding: EdgeInsets.all(24),
-          child: Text(
-            'まだ保存した場所がありません',
-            style: TextStyle(
-              color: AppColors.textGrey,
-            ),
-          ),
-        ),
-      ],
-    );
+    return const SavedPlacesScreen(showBackButton: false);
   }
 }
 
@@ -541,16 +551,26 @@ class ProfilePage extends StatelessWidget {
                   // ログイン中のユーザー情報
                   // ------------------------------------------
                   if (user != null) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      user.displayName ?? '名前未設定',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      user.email ?? '',
-                      style: const TextStyle(color: AppColors.textGrey),
-                    ),
-                  ],
+  const SizedBox(height: 16),
+  FutureBuilder<UserProfile?>(
+    future: UserRepository.instance.fetchProfile(user.uid),
+    builder: (context, snap) {
+      final name = snap.data?.name ?? user.displayName ?? '名前未設定';
+      return Column(
+        children: [
+          Text(
+            name,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          Text(
+            user.email ?? '',
+            style: const TextStyle(color: AppColors.textGrey),
+          ),
+        ],
+      );
+    },
+  ),
+],
                 ],
               ),
             ),
