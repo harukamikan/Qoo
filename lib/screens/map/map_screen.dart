@@ -11,7 +11,7 @@ import 'comment_bubble.dart';
 import 'map_painter.dart';
 import '../../widgets/liked_tips_bottom_sheet.dart';
 
-/// 画像3に対応する「地図」画面（ボトムナビの初期タブ）。
+/// 画像に対応する「地図」画面（ボトムナビの初期タブ）。
 class MapScreen extends StatefulWidget {
   final void Function(int tabIndex) onSwitchTab;
 
@@ -491,16 +491,14 @@ class _MapScreenState extends State<MapScreen> {
 
               // ---- 右下 JAM瓶アイコン（ボトムシート開く） ----
               Positioned(
-                right: 18,
-                bottom: 155,
+                right: 16,
+                bottom: 95,
                 child: GestureDetector(
                   onTap: () {
                     showModalBottomSheet(
                       context: context,
                       isScrollControlled: true,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                      ),
+                      backgroundColor: Colors.transparent,
                       builder: (context) {
                         return SizedBox(
                           height: MediaQuery.of(context).size.height * 0.6,
@@ -511,39 +509,36 @@ class _MapScreenState extends State<MapScreen> {
                   },
                   child: Image.asset(
                     'assets/images/jam_jar.png',
-                    width: 60,
-                    height: 60,
+                    width: 65,
+                    height: 65,
                   ),
                 ),
               ),
 
-              // ---- 右下フローティングボタン群 ----
+              // ---- 右下「現在地にTips投稿」ボタン ----
               Positioned(
-                right: 18,
-                bottom: 90,
-                child: FloatingActionButton(
-                  heroTag: 'locate',
-                  mini: true,
-                  backgroundColor: AppColors.surface,
-                  foregroundColor: AppColors.navy,
-                  onPressed: () {
-                    ScaffoldMessenger.of(context)
-                      ..hideCurrentSnackBar()
-                      ..showSnackBar(
-                        const SnackBar(content: Text('現在地に移動しました')),
-                      );
-                  },
-                  child: const Icon(Icons.my_location),
-                ),
-              ),
-              Positioned(
-                right: 18,
-                bottom: 20,
-                child: FloatingActionButton(
-                  heroTag: 'addReview',
-                  backgroundColor: AppColors.primary,
+                right: 16,
+                bottom: 24,
+                child: ElevatedButton.icon(
                   onPressed: () => widget.onSwitchTab(2),
-                  child: const Icon(Icons.add),
+                  icon: const Icon(Icons.add_location_alt, color: Colors.white),
+                  label: const Text(
+                    '現在地にTips投稿',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFE53935),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
                 ),
               ),
             ],

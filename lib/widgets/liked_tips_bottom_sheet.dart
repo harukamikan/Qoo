@@ -2,6 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+// 以下のパスは実際のプロジェクト構造に合わせて調整してください
+import '../models/local_hack.dart'; // Tip または LocalHack のモデル
+import '../state/liked_tips_provider.dart';
+
 class LikedTipsBottomSheet extends ConsumerWidget {
   const LikedTipsBottomSheet({super.key});
 
@@ -12,7 +16,7 @@ class LikedTipsBottomSheet extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: const BoxDecoration(
-        color: Color(0xFFFFF0F5), // 画像に合わせた淡いピンク背景
+        color: Color(0xFFFFF0F5), // 淡いピンク背景
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
@@ -48,7 +52,14 @@ class LikedTipsBottomSheet extends ConsumerWidget {
                   itemCount: tips.length,
                   itemBuilder: (context, index) {
                     final tip = tips[index];
-                    return TipCard(tip: tip); // 既存のTipカードUIコンポーネントを使用
+                    // カード形式のリスト表示（既存のCardコンポーネントがあればそちらに置換してください）
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      child: ListTile(
+                        title: Text(tip.title),
+                        subtitle: Text(tip.description),
+                      ),
+                    );
                   },
                 );
               },
