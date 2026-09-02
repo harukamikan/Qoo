@@ -7,6 +7,7 @@ import '../theme/app_colors.dart';
 import '../services/translation_service.dart';
 import '../services/auth_service.dart';
 import '../services/user_repository.dart';
+import '../services/ui_translations.dart';
 
 /// Tips投稿ダイアログを表示する。
 ///
@@ -40,13 +41,14 @@ void showPostTipsDialog(
       return StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
-            title: const Row(
+            title: Row(
               children: [
-                Icon(Icons.edit_location_alt, color: AppColors.primary),
-                SizedBox(width: 8),
+                const Icon(Icons.edit_location_alt, color: AppColors.primary),
+                const SizedBox(width: 8),
                 Text(
-                  'Tipsを投稿',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  UiTranslations.t('Tipsを投稿'),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -64,9 +66,9 @@ void showPostTipsDialog(
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'スポット名 / 場所の名前:',
-                    style: TextStyle(
+                  Text(
+                    UiTranslations.t('スポット名 / 場所の名前:'),
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                     ),
@@ -74,19 +76,19 @@ void showPostTipsDialog(
                   const SizedBox(height: 4),
                   TextField(
                     controller: placeController,
-                    decoration: const InputDecoration(
-                      hintText: '例: ○○公園、駅前カフェ',
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(
+                    decoration: InputDecoration(
+                      hintText: UiTranslations.t('例: ○○公園、駅前カフェ'),
+                      border: const OutlineInputBorder(),
+                      contentPadding: const EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 8,
                       ),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'カテゴリ:',
-                    style: TextStyle(
+                  Text(
+                    UiTranslations.t('カテゴリ:'),
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                     ),
@@ -97,8 +99,10 @@ void showPostTipsDialog(
                     isExpanded: true,
                     items: categories
                         .map(
-                          (cat) =>
-                              DropdownMenuItem(value: cat, child: Text(cat)),
+                          (cat) => DropdownMenuItem(
+                            value: cat,
+                            child: Text(UiTranslations.t(cat)),
+                          ),
                         )
                         .toList(),
                     onChanged: (val) {
@@ -108,9 +112,9 @@ void showPostTipsDialog(
                     },
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Tips / アドバイス:',
-                    style: TextStyle(
+                  Text(
+                    UiTranslations.t('Tips / アドバイス:'),
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                     ),
@@ -119,9 +123,9 @@ void showPostTipsDialog(
                   TextField(
                     controller: contentController,
                     maxLines: 3,
-                    decoration: const InputDecoration(
-                      hintText: '旅行者へのおすすめポイントや注意点...',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      hintText: UiTranslations.t('旅行者へのおすすめポイントや注意点...'),
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                 ],
@@ -130,7 +134,7 @@ void showPostTipsDialog(
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogCtx),
-                child: const Text('キャンセル'),
+                child: Text(UiTranslations.t('キャンセル')),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -217,7 +221,7 @@ void showPostTipsDialog(
                     SnackBar(content: Text('「$placeName」にTipsを追加しました！')),
                   );
                 },
-                child: const Text('投稿する'),
+                child: Text(UiTranslations.t('投稿する')),
               ),
             ],
           );
