@@ -4,8 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/nearby_comment.dart';
 import '../utils/geo_utils.dart';
 import '../theme/app_colors.dart';
+import '../services/translation_service.dart';
 import '../services/auth_service.dart';
 import '../services/user_repository.dart';
+
 /// Tips投稿ダイアログを表示する。
 ///
 /// 投稿が成功したら [onPosted] に、作成された [NearbyComment] を渡して返す。
@@ -137,17 +139,35 @@ void showPostTipsDialog(
                 ),
                 onPressed: () async {
                   if (contentController.text.trim().isEmpty) return;
-                   // ユーザー名をFirestoreから取得
-  final uid = AuthService.instance.uid;
-  String userName = 'Traveler';
-  if (uid != null) {
-    final profile = await UserRepository.instance.fetchProfile(uid);
-    if (profile != null) userName = profile.name;
-  }
+
+                  // ユーザー名をFirestoreから取得
+                  final uid = AuthService.instance.uid;
+                  String userName = 'Traveler';
+                  if (uid != null) {
+                    final profile =
+                        await UserRepository.instance.fetchProfile(uid);
+                    if (profile != null) userName = profile.name;
+                  }
 
                   final placeName = placeController.text.trim().isEmpty
                       ? 'おすすめスポット'
                       : placeController.text.trim();
+
+                  final originalContent = contentController.text.trim();
+                  const originalLang = 'ja'; // TODO: 投稿者の言語をUserProfileから取得する
+
+                  // 投稿内容を全言語に翻訳
+                  Map<String, String> translations = {};
+                  try {
+                    translations = await TranslationService.instance
+                        .translateToAllLanguages(
+                      text: originalContent,
+                      originalLang: originalLang,
+                    );
+                  } catch (e) {
+                    debugPrint('Translation error: $e');
+                    translations = {originalLang: originalContent};
+                  }
 
                   String newDocId =
                       DateTime.now().millisecondsSinceEpoch.toString();
@@ -155,16 +175,18 @@ void showPostTipsDialog(
                     final ref = await FirebaseFirestore.instance
                         .collection('comments')
                         .add({
-                          'place_name': placeName,
-                          'category': selectedCategory,
-                          'content': contentController.text.trim(),
-                          'latitude': targetPosition.latitude,
-                          'longitude': targetPosition.longitude,
-                          'user_name': userName,
-                          'user_country': '🇯🇵',
-                          'helpful_count': 1,
-                          'created_at': FieldValue.serverTimestamp(),
-                        });
+                      'place_name': placeName,
+                      'category': selectedCategory,
+                      'content': originalContent,
+                      'original_lang': originalLang,
+                      'translations': translations,
+                      'latitude': targetPosition.latitude,
+                      'longitude': targetPosition.longitude,
+                      'user_name': userName,
+                      'user_country': '🇯🇵',
+                      'helpful_count': 1,
+                      'created_at': FieldValue.serverTimestamp(),
+                    });
                     newDocId = ref.id;
                   } catch (e) {
                     debugPrint('Firebase save note: $e');
@@ -174,8 +196,8 @@ void showPostTipsDialog(
                     id: newDocId,
                     placeName: placeName,
                     category: selectedCategory,
-                    content: contentController.text.trim(),
-                    userName: 'userName',
+                    content: originalContent,
+                    userName: userName,
                     userCountry: '🇯🇵',
                     helpfulCount: 1,
                     position: targetPosition,
@@ -183,6 +205,8 @@ void showPostTipsDialog(
                       currentCenter,
                       targetPosition,
                     ),
+                    translations: translations,
+                    originalLang: originalLang,
                   );
 
                   onPosted(newTip);

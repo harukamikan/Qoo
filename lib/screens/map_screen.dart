@@ -217,7 +217,7 @@ class _MapPageState extends State<MapPage> {
       debugPrint('Firestore fetch error: $e');
       commentsError = '投稿データを取得できませんでした。右下のボタンで再読み込みしてください。';
     }
-     List<TravelPhoto> photos = [];
+    List<TravelPhoto> photos = [];
     try {
       photos = await _fetchNearbyPhotos(
         center,
@@ -340,6 +340,10 @@ class _MapPageState extends State<MapPage> {
             helpfulCount: (data['helpful_count'] as num?)?.toInt() ?? 0,
             position: point,
             distanceMeters: distance,
+            translations: (data['translations'] as Map<String, dynamic>?)
+                    ?.map((key, value) => MapEntry(key, value.toString())) ??
+                const {},
+            originalLang: data['original_lang'] as String? ?? 'ja',
           ),
         );
       }
@@ -348,7 +352,7 @@ class _MapPageState extends State<MapPage> {
     results.sort((a, b) => a.distanceMeters.compareTo(b.distanceMeters));
     return results;
   }
-  
+
   Future<List<TravelPhoto>> _fetchNearbyPhotos(ll.LatLng center) async {
     final snapshot =
         await FirebaseFirestore.instance.collection('travel_photos').get();
@@ -456,33 +460,33 @@ class _MapPageState extends State<MapPage> {
   }
 
   Widget _mapSearch() => Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: .94),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: const [
-                  BoxShadow(color: Colors.black12, blurRadius: 12),
-                ],
-              ),
-              child: SearchBarWidget(
-                showCategoryChips: false,
-                onSearchChanged: (query, category) {
-                  setState(() {
-                    _searchKeyword = query;
-                  });
-                },
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: .94),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black12, blurRadius: 12),
+                  ],
+                ),
+                child: SearchBarWidget(
+                  showCategoryChips: false,
+                  onSearchChanged: (query, category) {
+                    setState(() {
+                      _searchKeyword = query;
+                    });
+                  },
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          _modeToggleButton(),
-        ],
-      ),
-    );
+            const SizedBox(width: 8),
+            _modeToggleButton(),
+          ],
+        ),
+      );
 
   Widget _modeToggleButton() => Container(
         width: 48,
@@ -518,8 +522,10 @@ class _MapPageState extends State<MapPage> {
     return AnimatedBuilder(
       animation: inventoryData,
       builder: (context, _) {
-        final markerSkin = inventoryData.getEquippedItem(GachaItemType.markerSkin);
-        final avatarSkin = inventoryData.getEquippedItem(GachaItemType.avatarSkin);
+        final markerSkin =
+            inventoryData.getEquippedItem(GachaItemType.markerSkin);
+        final avatarSkin =
+            inventoryData.getEquippedItem(GachaItemType.avatarSkin);
         final currentSkin = markerSkin ?? avatarSkin;
 
         return Scaffold(
@@ -546,7 +552,8 @@ class _MapPageState extends State<MapPage> {
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                     userAgentPackageName: 'com.example.qoo',
                     maxZoom: 17,
                     maxNativeZoom: 17,
@@ -603,9 +610,11 @@ class _MapPageState extends State<MapPage> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 3),
+                                  border:
+                                      Border.all(color: Colors.white, width: 3),
                                   boxShadow: const [
-                                    BoxShadow(color: Colors.black26, blurRadius: 6),
+                                    BoxShadow(
+                                        color: Colors.black26, blurRadius: 6),
                                   ],
                                   image: DecorationImage(
                                     image: NetworkImage(entry.value.first.imageUrl),
@@ -619,9 +628,7 @@ class _MapPageState extends State<MapPage> {
                   ),
                 ],
               ),
-
               _mapSearch(),
-
               Positioned(
                 top: 96,
                 left: 0,
@@ -636,8 +643,9 @@ class _MapPageState extends State<MapPage> {
                     itemBuilder: (context, index) {
                       final cat = _categoryFilterList[index];
                       final isSelected = _selectedCategoryFilter == cat;
-                      final catColor =
-                          cat == 'All' ? AppColors.navy : _getCategoryColor(cat);
+                      final catColor = cat == 'All'
+                          ? AppColors.navy
+                          : _getCategoryColor(cat);
 
                       return ChoiceChip(
                         label: Text(
@@ -667,7 +675,6 @@ class _MapPageState extends State<MapPage> {
                   ),
                 ),
               ),
-
               Positioned(
                 right: 24,
                 bottom: 165,
