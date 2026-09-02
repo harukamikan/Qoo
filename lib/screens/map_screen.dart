@@ -19,11 +19,10 @@ import '../widgets/location_tips_modal.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/photo_upload_service.dart';
 import '../widgets/photo_capture_sheet.dart';
-
-// ガチャと共有するコイン管理Providerのインポート（パスはプロジェクト構成に合わせて調整してください）
 import '../screens/gacha/coin_manager.dart';
 import '../screens/gacha/inventory_manager.dart';
 import '../screens/gacha/gacha_item.dart';
+import 'package:flutter/foundation.dart';
 
 /// 現在地からこの半径（メートル）以内の投稿だけを表示する。
 const double nearbyRadiusMeters = 1000;
@@ -198,7 +197,7 @@ class _MapPageState extends State<MapPage> {
     LocationIssue locationIssue = LocationIssue.none;
     try {
       final result = await _getCurrentPosition().timeout(
-        const Duration(seconds: 2),
+        const Duration(seconds: 20),
         onTimeout: () => (position: null, issue: LocationIssue.serviceDisabled),
       );
       if (result.position != null) {
@@ -285,9 +284,12 @@ class _MapPageState extends State<MapPage> {
   Future<({ll.LatLng? position, LocationIssue issue})>
       _getCurrentPosition() async {
     try {
-      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        return (position: null, issue: LocationIssue.serviceDisabled);
+      // Web環境以外（iOS/Android実機・エミュレータ）の場合のみ端末の位置情報スイッチを確認
+      if (!kIsWeb) {
+        final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (!serviceEnabled) {
+          return (position: null, issue: LocationIssue.serviceDisabled);
+        }
       }
 
       var permission = await Geolocator.checkPermission();
@@ -717,8 +719,18 @@ class _MapPageState extends State<MapPage> {
                 heroTag: 'refresh_btn',
                 backgroundColor: Colors.white,
                 foregroundColor: AppColors.textGrey,
-                onPressed: _loadEverything,
-                tooltip: '再読み込み',
+                onPressed: () {
+                // 1. 現在地へ地図カメラをスムーズに移動させる
+                _mapController.move(_currentCenter, 15.0); // 15.0 はズームレベル
+                // 2. データの再読み込みを行う
+                _loadEverything();
+                ScaffoldMessenger.of(context)
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(
+                    const SnackBar(content: Text('現在地に移動します')),
+                    );
+                },
+                tooltip: '現在地に戻る',
                 child: const Icon(Icons.my_location),
               ),
               const SizedBox(height: 12),
