@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/nearby_comment.dart';
 import '../utils/geo_utils.dart';
 import '../theme/app_colors.dart';
+import '../services/translation_service.dart';
 
 /// Tips投稿ダイアログを表示する。
 ///
@@ -141,22 +142,40 @@ void showPostTipsDialog(
                       ? 'おすすめスポット'
                       : placeController.text.trim();
 
+                  final originalContent = contentController.text.trim();
+                  const originalLang = 'ja'; // TODO: 投稿者の言語をUserProfileから取得する
+
+                  // 投稿内容を全言語に翻訳
+                  Map<String, String> translations = {};
+                  try {
+                    translations = await TranslationService.instance
+                        .translateToAllLanguages(
+                      text: originalContent,
+                      originalLang: originalLang,
+                    );
+                  } catch (e) {
+                    debugPrint('Translation error: $e');
+                    translations = {originalLang: originalContent};
+                  }
+
                   String newDocId =
                       DateTime.now().millisecondsSinceEpoch.toString();
                   try {
                     final ref = await FirebaseFirestore.instance
                         .collection('comments')
                         .add({
-                          'place_name': placeName,
-                          'category': selectedCategory,
-                          'content': contentController.text.trim(),
-                          'latitude': targetPosition.latitude,
-                          'longitude': targetPosition.longitude,
-                          'user_name': 'You',
-                          'user_country': '🇯🇵',
-                          'helpful_count': 1,
-                          'created_at': FieldValue.serverTimestamp(),
-                        });
+                      'place_name': placeName,
+                      'category': selectedCategory,
+                      'content': originalContent,
+                      'original_lang': originalLang,
+                      'translations': translations,
+                      'latitude': targetPosition.latitude,
+                      'longitude': targetPosition.longitude,
+                      'user_name': 'You',
+                      'user_country': '🇯🇵',
+                      'helpful_count': 1,
+                      'created_at': FieldValue.serverTimestamp(),
+                    });
                     newDocId = ref.id;
                   } catch (e) {
                     debugPrint('Firebase save note: $e');
@@ -166,7 +185,7 @@ void showPostTipsDialog(
                     id: newDocId,
                     placeName: placeName,
                     category: selectedCategory,
-                    content: contentController.text.trim(),
+                    content: originalContent,
                     userName: 'You',
                     userCountry: '🇯🇵',
                     helpfulCount: 1,
@@ -175,6 +194,8 @@ void showPostTipsDialog(
                       currentCenter,
                       targetPosition,
                     ),
+                    translations: translations,
+                    originalLang: originalLang,
                   );
 
                   onPosted(newTip);
