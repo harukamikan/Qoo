@@ -12,7 +12,6 @@ import 'map_painter.dart';
 import '../../widgets/liked_tips_bottom_sheet.dart';
 import '../../state/liked_tips_provider.dart';
 
-
 /// 画像に対応する「地図」画面（ボトムナビの初期タブ）。
 class MapScreen extends ConsumerStatefulWidget {
   final void Function(int tabIndex) onSwitchTab;
@@ -83,16 +82,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 if (results.isEmpty)
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 16),
-                    child: Text('該当するスポットが見つかりませんでした',
-                        style: TextStyle(color: AppColors.textGrey)),
+                    child: Text(
+                      '該当するスポットが見つかりませんでした',
+                      style: TextStyle(color: AppColors.textGrey),
+                    ),
                   )
                 else
                   ...results.map(
                     (p) => ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(p.photoIcon, color: AppColors.primary),
-                      title: Text(p.name,
-                          style: const TextStyle(fontWeight: FontWeight.w700)),
+                      title: Text(
+                        p.name,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
                       subtitle: Text('${p.category} • ${p.locationLabel}'),
                       onTap: () {
                         Navigator.of(context).pop();
@@ -133,8 +136,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: const Text('人気の口コミ'),
-        content:
-            const Text('このエリアには合計9,999件の口コミが投稿されています。カテゴリーを絞り込んで探してみましょう。'),
+        content: const Text('このエリアには合計9,999件の口コミが投稿されています。カテゴリーを絞り込んで探してみましょう。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -142,6 +144,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showLikedTipsSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return SizedBox(
+          height: MediaQuery.of(context).size.height * 0.6,
+          child: const LikedTipsBottomSheet(),
+        );
+      },
     );
   }
 
@@ -163,13 +179,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               border: Border.all(color: markerSkin.rarity.color, width: 1.5),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.15),
+                  color: Colors.black.withOpacity(0.15),
                   blurRadius: 3,
                 ),
               ],
             ),
-            child: Text(markerSkin.iconOrAsset,
-                style: const TextStyle(fontSize: 12)),
+            child: Text(
+              markerSkin.iconOrAsset,
+              style: const TextStyle(fontSize: 12),
+            ),
           ),
         ),
       ],
@@ -192,7 +210,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             border: Border.all(color: ringColor, width: 3),
             boxShadow: [
               BoxShadow(
-                  color: ringColor.withValues(alpha: 0.5), blurRadius: 12),
+                color: ringColor.withOpacity(0.5),
+                blurRadius: 12,
+              ),
             ],
           ),
           child: Center(
@@ -206,13 +226,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.6),
+            color: Colors.black.withOpacity(0.6),
             borderRadius: BorderRadius.circular(8),
           ),
           child: const Text(
             '現在地',
             style: TextStyle(
-                color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+              color: Colors.white,
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ],
@@ -320,7 +343,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   child: _decorateWithMarkerSkin(
                     CommentBubble(
                       background: AppColors.primary,
-                      borderColor: Colors.black.withValues(alpha: 0.85),
+                      borderColor: Colors.black.withOpacity(0.85),
                       onTap: () => _openDetail(p1.id),
                       child: const _BubbleContent(
                         text: 'いいね！このご飯は',
@@ -338,7 +361,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   child: _decorateWithMarkerSkin(
                     CommentBubble(
                       background: AppColors.navy,
-                      borderColor: Colors.black.withValues(alpha: 0.85),
+                      borderColor: Colors.black.withOpacity(0.85),
                       onTap: () => _openDetail(p2.id),
                       child: const _BubbleContent(
                         text: 'すごい！歴史を感じる',
@@ -354,7 +377,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 top: 190,
                 child: CommentBubble(
                   background: AppColors.navy,
-                  borderColor: Colors.black.withValues(alpha: 0.85),
+                  borderColor: Colors.black.withOpacity(0.85),
                   onTap: _showCommentSummary,
                   child: const _BubbleContent(
                     title: 'コメント',
@@ -371,7 +394,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   child: _decorateWithMarkerSkin(
                     CommentBubble(
                       background: AppColors.primary,
-                      borderColor: Colors.black.withValues(alpha: 0.85),
+                      borderColor: Colors.black.withOpacity(0.85),
                       onTap: () => _openDetail(p5.id),
                       child: const _BubbleContent(
                         text: 'ムリ',
@@ -403,11 +426,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         decoration: BoxDecoration(
                           color: AppColors.surface,
                           borderRadius: BorderRadius.circular(28),
-                          boxShadow: [
+                          boxShadow: const [
                             BoxShadow(
                               color: AppColors.shadow,
                               blurRadius: 12,
-                              offset: const Offset(0, 4),
+                              offset: Offset(0, 4),
                             ),
                           ],
                         ),
@@ -434,10 +457,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                 radius: 17,
                                 backgroundColor: AppColors.primaryLight,
                                 child: avatarSkin != null
-                                    ? Text(avatarSkin.iconOrAsset,
-                                        style: const TextStyle(fontSize: 16))
-                                    : const Icon(Icons.person,
-                                        color: AppColors.primary, size: 20),
+                                    ? Text(
+                                        avatarSkin.iconOrAsset,
+                                        style: const TextStyle(fontSize: 16),
+                                      )
+                                    : const Icon(
+                                        Icons.person,
+                                        color: AppColors.primary,
+                                        size: 20,
+                                      ),
                               ),
                             ),
                           ],
@@ -471,15 +499,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         borderRadius: BorderRadius.circular(16),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.surface,
                             borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
+                            boxShadow: const [
                               BoxShadow(
                                 color: AppColors.shadow,
                                 blurRadius: 10,
-                                offset: const Offset(0, 3),
+                                offset: Offset(0, 3),
                               ),
                             ],
                           ),
@@ -506,83 +536,101 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 ),
               ),
 
-              // ---- 右下 JAM瓶アイコン（ボトムシート開く） ----
-              Positioned(
-                right: 16,
-                bottom: 95,
-                child: GestureDetector(
-                  onTap: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) {
-                        return SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.6,
-                          child: const LikedTipsBottomSheet(),
-                        );
-                      },
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Image.asset(
-                      'assets/images/jam_jar.png',
-                      width: 56,
-                      height: 56,
-                      errorBuilder: (context, error, stackTrace) {
-                        // 画像アセットがロードできない場合のフォールバック表示
-                        return const SizedBox(
-                          width: 56,
-                          height: 56,
-                          child: Center(
-                            child: Text(
-                              '🫙',
-                              style: TextStyle(fontSize: 32),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ),
-
-              // ---- 右下「現在地にTips投稿」ボタン ----
+              // ---- 右下 ボタン群（JAM瓶 + 現在地にTips投稿） ----
               Positioned(
                 right: 16,
                 bottom: 24,
-                child: ElevatedButton.icon(
-                  onPressed: () => widget.onSwitchTab(2),
-                  icon: const Icon(Icons.add_location_alt, color: Colors.white),
-                  label: const Text(
-                    '現在地にTips投稿',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    // JAM瓶ボタン
+                    GestureDetector(
+                      onTap: _showLikedTipsSheet,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.15),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Image.asset(
+                              'assets/images/jam_jar.png',
+                              width: 56,
+                              height: 56,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const SizedBox(
+                                  width: 56,
+                                  height: 56,
+                                  child: Center(
+                                    child: Text(
+                                      '🫙',
+                                      style: TextStyle(fontSize: 32),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          // いいね数が1以上の場合はバッジを表示
+                          if (likedTipsCount > 0)
+                            Positioned(
+                              top: -2,
+                              right: -2,
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFE53935),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Text(
+                                  '$likedTipsCount',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE53935),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 14,
+                    const SizedBox(height: 12),
+
+                    // 「現在地にTips投稿」ボタン
+                    ElevatedButton.icon(
+                      onPressed: () => widget.onSwitchTab(2),
+                      icon: const Icon(Icons.add_location_alt,
+                          color: Colors.white),
+                      label: const Text(
+                        '現在地にTips投稿',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE53935),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 14,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
+                  ],
                 ),
               ),
             ],
