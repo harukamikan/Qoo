@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../services/auth_service.dart';
+import '../services/ui_translations.dart';
 import 'gacha/gacha_item.dart';
 import 'map_screen.dart';
 import 'gacha/gacha_screen.dart';
@@ -53,31 +54,31 @@ class _HomeShellState extends State<HomeShell> {
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.textGrey,
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.map),
-            activeIcon: Icon(Icons.map_rounded),
-            label: '地図',
+            icon: const Icon(Icons.map),
+            activeIcon: const Icon(Icons.map_rounded),
+            label: UiTranslations.t('地図'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.casino_outlined),
-            activeIcon: Icon(Icons.casino),
-            label: 'ガチャ',
+            icon: const Icon(Icons.casino_outlined),
+            activeIcon: const Icon(Icons.casino),
+            label: UiTranslations.t('ガチャ'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.rate_review_outlined),
-            activeIcon: Icon(Icons.rate_review),
-            label: '口コミ',
+            icon: const Icon(Icons.rate_review_outlined),
+            activeIcon: const Icon(Icons.rate_review),
+            label: UiTranslations.t('口コミ'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.bookmark_border),
-            activeIcon: Icon(Icons.bookmark),
-            label: '保存',
+            icon: const Icon(Icons.bookmark_border),
+            activeIcon: const Icon(Icons.bookmark),
+            label: UiTranslations.t('保存'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'プロフィール',
+            icon: const Icon(Icons.person_outline),
+            activeIcon: const Icon(Icons.person),
+            label: UiTranslations.t('プロフィール'),
           ),
         ],
       ),

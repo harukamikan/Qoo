@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/nearby_alert_service.dart';
+import '../services/ui_translations.dart';
 import '../utils/geo_utils.dart';
 import '../theme/app_colors.dart';
 import '../widgets/search_bar_widget.dart';
@@ -617,7 +618,8 @@ class _MapPageState extends State<MapPage> {
                                         color: Colors.black26, blurRadius: 6),
                                   ],
                                   image: DecorationImage(
-                                    image: NetworkImage(entry.value.first.imageUrl),
+                                    image: NetworkImage(
+                                        entry.value.first.imageUrl),
                                     fit: BoxFit.cover,
                                   ),
                                 ),
@@ -649,7 +651,9 @@ class _MapPageState extends State<MapPage> {
 
                       return ChoiceChip(
                         label: Text(
-                          cat == 'All' ? '🌐 すべて' : cat,
+                          cat == 'All'
+                              ? '🌐 ${UiTranslations.t('すべて')}'
+                              : UiTranslations.t(cat),
                           style: const TextStyle(fontSize: 16),
                         ),
                         selected: isSelected,
@@ -725,7 +729,7 @@ class _MapPageState extends State<MapPage> {
                 backgroundColor: Colors.white,
                 foregroundColor: AppColors.textGrey,
                 onPressed: _loadEverything,
-                tooltip: '再読み込み',
+                tooltip: UiTranslations.t('再読み込み'),
                 child: const Icon(Icons.my_location),
               ),
               const SizedBox(height: 12),
@@ -746,7 +750,11 @@ class _MapPageState extends State<MapPage> {
                           onPosted: _handleTipPosted, // コイン加算対応
                         ),
                 icon: Icon(_isPhotoMode ? Icons.camera_alt : Icons.add_comment),
-                label: Text(_isPhotoMode ? '写真を撮る' : '現在地にTips投稿'),
+                label: Text(
+                  _isPhotoMode
+                      ? UiTranslations.t('写真を撮る')
+                      : UiTranslations.t('現在地にTips投稿'),
+                ),
               ),
             ],
           ),
@@ -771,7 +779,7 @@ class _MapPageState extends State<MapPage> {
       position: _currentCenter,
     );
 
-        if (!mounted) return;
+    if (!mounted) return;
     if (result != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('写真を投稿しました')),
@@ -783,18 +791,19 @@ class _MapPageState extends State<MapPage> {
       );
     }
   }
+
   Future<void> _reloadPhotos() async {
-  try {
-    final photos = await _fetchNearbyPhotos(_currentCenter)
-        .timeout(const Duration(milliseconds: 2500), onTimeout: () => []);
-    if (!mounted) return;
-    setState(() {
-      _nearbyPhotos = photos;
-    });
-  } catch (e) {
-    debugPrint('写真リスト更新エラー: $e');
+    try {
+      final photos = await _fetchNearbyPhotos(_currentCenter)
+          .timeout(const Duration(milliseconds: 2500), onTimeout: () => []);
+      if (!mounted) return;
+      setState(() {
+        _nearbyPhotos = photos;
+      });
+    } catch (e) {
+      debugPrint('写真リスト更新エラー: $e');
+    }
   }
-}
 
   Future<void> _handlePickFromGallery() async {
     final picker = ImagePicker();
@@ -812,7 +821,7 @@ class _MapPageState extends State<MapPage> {
       position: _currentCenter,
     );
 
-        if (!mounted) return;
+    if (!mounted) return;
     if (result != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('写真を投稿しました')),
@@ -824,7 +833,8 @@ class _MapPageState extends State<MapPage> {
       );
     }
   }
-    Map<String, List<TravelPhoto>> _getGroupedPhotos() {
+
+  Map<String, List<TravelPhoto>> _getGroupedPhotos() {
     final Map<String, List<TravelPhoto>> map = {};
     for (final photo in _nearbyPhotos) {
       final key = _toLocationKey(photo.position);
