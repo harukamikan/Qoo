@@ -1,9 +1,6 @@
-// liked_tips_bottom_sheet.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-// 以下のパスは実際のプロジェクト構造に合わせて調整してください
-import '../models/local_hack.dart'; // Tip または LocalHack のモデル
+import '../models/local_hack.dart';
 import '../state/liked_tips_provider.dart';
 
 class LikedTipsBottomSheet extends ConsumerWidget {
@@ -16,13 +13,12 @@ class LikedTipsBottomSheet extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: const BoxDecoration(
-        color: Color(0xFFFFF0F5), // 淡いピンク背景
+        color: Color(0xFFFFF0F5),
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 上部のドラッグハンドル
           Container(
             width: 40,
             height: 4,
@@ -32,39 +28,76 @@ class LikedTipsBottomSheet extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 12),
-          // ヘッダータイトル
-          const Text(
-            'あなたが 👍 をしたTips',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            children: [
+              Image.asset(
+                'assets/images/jam_jar.png',
+                width: 28,
+                height: 28,
+                errorBuilder: (_, __, ___) => const Text('🫙', style: TextStyle(fontSize: 22)),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'いいねしたTips（JAM瓶）',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          // リスト表示エリア
-          Expanded(
+          const SizedBox(height: 12),
+          Flexible(
             child: likedTipsAsync.when(
               data: (tips) {
                 if (tips.isEmpty) {
-                  return const Center(child: Text('まだいいねしたTipsはありません'));
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 32),
+                    child: Center(
+                      child: Text(
+                        'まだ「いいね」したTipsはありません',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                  );
                 }
-                return ListView.builder(
+                return ListView.separated(
+                  shrinkWrap: true,
                   itemCount: tips.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final tip = tips[index];
-                    // カード形式のリスト表示（既存のCardコンポーネントがあればそちらに置換してください）
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 6),
-                      child: ListTile(
-                        title: Text(tip.title),
-                        subtitle: Text(tip.description),
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        tip.title,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      // description がない場合に対応できるよう toString または title を代替表示
+                      subtitle: Text(
+                        tip.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.favorite, color: Colors.pink),
+                        onPressed: () {
+                          ref.read(likedTipsProvider.notifier).toggleLike(tip);
+                        },
                       ),
                     );
                   },
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) => Center(child: Text('エラーが発生しました: $err')),
+              loading: () => const Padding(
+                padding: EdgeInsets.symmetric(vertical: 32),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (err, stack) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Text('エラーが発生しました: $err', style: const TextStyle(color: Colors.red)),
+              ),
             ),
           ),
         ],

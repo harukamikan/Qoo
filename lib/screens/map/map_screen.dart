@@ -1,27 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/place.dart';
 import '../gacha/gacha_item.dart';
 import '../../state/app_data.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/category_chip.dart';
 import '../review_detail/review_detail_screen.dart';
-import '../gacha/coin_manager.dart';
 import '../gacha/inventory_manager.dart';
 import 'comment_bubble.dart';
 import 'map_painter.dart';
 import '../../widgets/liked_tips_bottom_sheet.dart';
+import '../../state/liked_tips_provider.dart';
+
 
 /// 画像に対応する「地図」画面（ボトムナビの初期タブ）。
-class MapScreen extends StatefulWidget {
+class MapScreen extends ConsumerStatefulWidget {
   final void Function(int tabIndex) onSwitchTab;
 
   const MapScreen({super.key, required this.onSwitchTab});
 
   @override
-  State<MapScreen> createState() => _MapScreenState();
+  ConsumerState<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> {
+class _MapScreenState extends ConsumerState<MapScreen> {
   String _selectedFilter = 'すべて';
   final _searchController = TextEditingController();
 
@@ -166,7 +168,8 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               ],
             ),
-            child: Text(markerSkin.iconOrAsset, style: const TextStyle(fontSize: 12)),
+            child: Text(markerSkin.iconOrAsset,
+                style: const TextStyle(fontSize: 12)),
           ),
         ),
       ],
@@ -175,7 +178,8 @@ class _MapScreenState extends State<MapScreen> {
 
   /// 装備中アバタースキンを使った「現在地」マーカー
   Widget _buildSelfAvatarMarker(GachaItem? avatarSkin) {
-    final ringColor = avatarSkin != null ? avatarSkin.rarity.color : AppColors.primary;
+    final ringColor =
+        avatarSkin != null ? avatarSkin.rarity.color : AppColors.primary;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -187,7 +191,8 @@ class _MapScreenState extends State<MapScreen> {
             color: Colors.white,
             border: Border.all(color: ringColor, width: 3),
             boxShadow: [
-              BoxShadow(color: ringColor.withValues(alpha: 0.5), blurRadius: 12),
+              BoxShadow(
+                  color: ringColor.withValues(alpha: 0.5), blurRadius: 12),
             ],
           ),
           child: Center(
@@ -206,7 +211,8 @@ class _MapScreenState extends State<MapScreen> {
           ),
           child: const Text(
             '現在地',
-            style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
           ),
         ),
       ],
@@ -216,6 +222,15 @@ class _MapScreenState extends State<MapScreen> {
   @override
   Widget build(BuildContext context) {
     final inventoryData = InventoryProvider.of(context);
+
+    // RiverpodのStateから「いいねしたTips」を取得
+    final likedTipsAsync = ref.watch(likedTipsProvider);
+    final likedTipsCount = likedTipsAsync.when(
+      data: (tips) => tips.length,
+      loading: () => 0,
+      error: (_, __) => 0,
+    );
+    debugPrint('=== 【デバッグ】いいね件数: $likedTipsCount ===');
 
     return AnimatedBuilder(
       animation: Listenable.merge([AppData.instance, inventoryData]),
@@ -284,8 +299,10 @@ class _MapScreenState extends State<MapScreen> {
                 ),
         );
 
-        final markerSkin = inventoryData.getEquippedItem(GachaItemType.markerSkin);
-        final avatarSkin = inventoryData.getEquippedItem(GachaItemType.avatarSkin);
+        final markerSkin =
+            inventoryData.getEquippedItem(GachaItemType.markerSkin);
+        final avatarSkin =
+            inventoryData.getEquippedItem(GachaItemType.avatarSkin);
 
         return Scaffold(
           body: Stack(
@@ -507,10 +524,37 @@ class _MapScreenState extends State<MapScreen> {
                       },
                     );
                   },
-                  child: Image.asset(
-                    'assets/images/jam_jar.png',
-                    width: 65,
-                    height: 65,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Image.asset(
+                      'assets/images/jam_jar.png',
+                      width: 56,
+                      height: 56,
+                      errorBuilder: (context, error, stackTrace) {
+                        // 画像アセットがロードできない場合のフォールバック表示
+                        return const SizedBox(
+                          width: 56,
+                          height: 56,
+                          child: Center(
+                            child: Text(
+                              '🫙',
+                              style: TextStyle(fontSize: 32),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
