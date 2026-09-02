@@ -197,7 +197,7 @@ class _MapPageState extends State<MapPage> {
     LocationIssue locationIssue = LocationIssue.none;
     try {
       final result = await _getCurrentPosition().timeout(
-        const Duration(seconds: 20),
+        const Duration(seconds: 10),
         onTimeout: () => (position: null, issue: LocationIssue.serviceDisabled),
       );
       if (result.position != null) {
