@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../services/collection_service.dart';
+import '../../services/user_repository.dart';
 
-/// コレクション達成者みんなの投稿写真を一覧表示する画面。
+/// コレクション達成者みんなの投稿を、ユーザーごとの「シート」として並べる画面。
 class EveryoneCollectionScreen extends StatefulWidget {
   final String collectionName;
   final List<String> spotIds;
@@ -17,8 +18,14 @@ class EveryoneCollectionScreen extends StatefulWidget {
       _EveryoneCollectionScreenState();
 }
 
+class _UserSheet {
+  final String name;
+  final List<String> photos;
+  _UserSheet(this.name, this.photos);
+}
+
 class _EveryoneCollectionScreenState extends State<EveryoneCollectionScreen> {
-  List<Map<String, dynamic>> _posts = [];
+  List<_UserSheet> _sheets = [];
   bool _loading = true;
 
   @override
@@ -29,9 +36,29 @@ class _EveryoneCollectionScreenState extends State<EveryoneCollectionScreen> {
 
   Future<void> _load() async {
     final posts = await CollectionService.fetchAllPostsForSpots(widget.spotIds);
+    final grouped = <String, List<String>>{};
+    for (final post in posts) {
+      final uid = post['userId'] as String? ?? 'unknown';
+      final url = post['imageUrl'] as String?;
+      if (url == null) continue;
+      grouped.putIfAbsent(uid, () => []).add(url);
+    }
+
+    final sheets = <_UserSheet>[];
+    for (final entry in grouped.entries) {
+      String name = 'ある旅行者';
+      try {
+        final profile = await UserRepository.instance.fetchProfile(entry.key);
+        if (profile != null && profile.name.isNotEmpty) {
+          name = profile.name;
+        }
+      } catch (_) {}
+      sheets.add(_UserSheet(name, entry.value));
+    }
+
     if (!mounted) return;
     setState(() {
-      _posts = posts;
+      _sheets = sheets;
       _loading = false;
     });
   }
@@ -47,22 +74,57 @@ class _EveryoneCollectionScreenState extends State<EveryoneCollectionScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _posts.isEmpty
+          : _sheets.isEmpty
               ? const Center(child: Text('まだ投稿がありません'))
-              : GridView.builder(
+              : ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  itemCount: _posts.length,
+                  itemCount: _sheets.length,
                   itemBuilder: (context, index) {
-                    final imageUrl = _posts[index]['imageUrl'] as String?;
-                    if (imageUrl == null) return const SizedBox();
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.network(imageUrl, fit: BoxFit.cover),
+                    final sheet = _sheets[index];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black12, blurRadius: 10),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 4, vertical: 8),
+                            child: Text(
+                              '${sheet.name}の${widget.collectionName}',
+                              style: const TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.w900),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              crossAxisSpacing: 8,
+                              mainAxisSpacing: 8,
+                              childAspectRatio: 0.75,
+                            ),
+                            itemCount: sheet.photos.length,
+                            itemBuilder: (context, i) {
+                              return ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Image.network(sheet.photos[i],
+                                    fit: BoxFit.cover),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     );
                   },
                 ),
