@@ -13,6 +13,7 @@ class PhotoUploadService {
     required Uint8List bytes,
     required String filename,
     required ll.LatLng position,
+    required String visibility,
   }) async {
     final imageUrl = await CloudinaryService.uploadImageBytes(
       bytes,
@@ -27,6 +28,7 @@ class PhotoUploadService {
       'latitude': position.latitude,
       'longitude': position.longitude,
       'userId': userId,
+      'visibility': visibility,
       'createdAt': FieldValue.serverTimestamp(),
     });
 

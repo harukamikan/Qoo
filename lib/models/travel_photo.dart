@@ -5,6 +5,8 @@ class TravelPhoto {
   final String imageUrl;
   final ll.LatLng position;
   final String userId;
+  final String visibility;
+  final DateTime? createdAt;
   final double distanceMeters;
 
   TravelPhoto({
@@ -12,6 +14,8 @@ class TravelPhoto {
     required this.imageUrl,
     required this.position,
     required this.userId,
+    required this.visibility,
+    required this.createdAt,
     required this.distanceMeters,
   });
 }

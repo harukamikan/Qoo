@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-import 'screens/root_shell.dart';
+import 'screens/home_shell.dart';
 import 'state/app_data.dart';
 import 'theme/app_colors.dart';
 import 'theme/app_theme.dart';
 
 /// アプリのエントリーウィジェット。
 /// 起動時にローカル保存データ（またはシードデータ）を読み込んでから
-/// [RootShell] を表示する。
+/// [HomeShell] を表示する。
 class JamApp extends StatelessWidget {
   const JamApp({super.key});
 
@@ -68,7 +68,7 @@ class _AppLoaderState extends State<_AppLoader> {
             ),
           );
         }
-        return const RootShell();
+        return const HomeShell();
       },
     );
   }
