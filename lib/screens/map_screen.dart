@@ -28,8 +28,6 @@ import '../screens/gacha/inventory_manager.dart';
 import '../screens/gacha/gacha_item.dart';
 import 'package:flutter/foundation.dart';
 import '../models/user_profile.dart';
-import 'package:flutter/foundation.dart';
-import '../models/user_profile.dart';
 import '../models/local_hack.dart';
 import '../widgets/local_hack_marker.dart';
 import '../services/local_hack_service.dart';
@@ -65,11 +63,8 @@ class _MapPageState extends State<MapPage> {
   List<NearbyComment> _nearbyComments = [];
   List<LocalHack> _localHacks = [];
   List<TravelPhoto> _nearbyPhotos = [];
-<<<<<<< HEAD
   List<Store> _stores = [];
-=======
   UserProfile? _currentProfile;
->>>>>>> 66b64ca1a7bedbae87835409e1ea4acd46b62dd4
   bool _isLoading = true;
   final _alertService = NearbyAlertService();
   LocationIssue _locationIssue = LocationIssue.none;
@@ -449,7 +444,8 @@ class _MapPageState extends State<MapPage> {
   /// 登録済み店舗を全件取得する（地域コレクション連携までは、確認用に距離で
   /// 絞り込まず全て表示する）。
   Future<List<Store>> _fetchStores() async {
-    final snapshot = await FirebaseFirestore.instance.collection('stores').get();
+    final snapshot =
+        await FirebaseFirestore.instance.collection('stores').get();
     final results = <Store>[];
     for (final doc in snapshot.docs) {
       final data = doc.data();
@@ -821,7 +817,7 @@ class _MapPageState extends State<MapPage> {
                               ),
                             ),
                           ),
-                          for (final hack in _localHacks)
+                      for (final hack in _localHacks)
                         Marker(
                           point: ll.LatLng(hack.latitude, hack.longitude),
                           width: 80,
