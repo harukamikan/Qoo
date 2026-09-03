@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../models/nearby_comment.dart';
 import '../theme/app_colors.dart';
 import '../screens/gacha/gacha_item.dart';
+import '../services/ui_translations.dart';
+import '../services/translation_service.dart';
+import '../state/app_data.dart';
 
 class GroupedBubbleMarker extends StatelessWidget {
   final List<NearbyComment> comments;
@@ -110,7 +113,7 @@ class GroupedBubbleMarker extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          activeComment.category,
+                          UiTranslations.t(activeComment.category),
                           style: TextStyle(
                             fontSize: 9.5,
                             fontWeight: FontWeight.bold,
@@ -122,7 +125,11 @@ class GroupedBubbleMarker extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    activeComment.content,
+                    activeComment.contentFor(
+                      TranslationService.toLanguageCode(
+                        AppData.instance.language,
+                      ),
+                    ),
                     style: const TextStyle(
                       fontSize: 10.5,
                       color: Colors.black87,
@@ -172,10 +179,10 @@ class GroupedBubbleMarker extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Text(
-                            '一覧>',
-                            style:
-                                TextStyle(fontSize: 8, color: AppColors.navy),
+                          Text(
+                            '${UiTranslations.t('一覧')}>',
+                            style: const TextStyle(
+                                fontSize: 8, color: AppColors.navy),
                           ),
                         ],
                       ),
@@ -197,9 +204,12 @@ class GroupedBubbleMarker extends StatelessWidget {
                 color: Colors.white,
                 shape: BoxShape.circle,
                 border: Border.all(color: markerSkin!.rarity.color, width: 1.5),
-                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 3)],
+                boxShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 3)
+                ],
               ),
-              child: Text(markerSkin!.iconOrAsset, style: const TextStyle(fontSize: 16)),
+              child: Text(markerSkin!.iconOrAsset,
+                  style: const TextStyle(fontSize: 16)),
             )
           else
             Icon(Icons.place, color: categoryColor, size: 26),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/ui_translations.dart';
 
 class SearchBarWidget extends StatefulWidget {
   final Function(String query, String selectedCategory) onSearchChanged;
@@ -47,7 +48,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
           TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'キーワードやスポット名で検索...',
+              hintText: UiTranslations.t('キーワードやスポット名で検索...'),
               prefixIcon: const Icon(Icons.search),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
@@ -88,7 +89,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                   return Padding(
                     padding: const EdgeInsets.only(right: 6.0),
                     child: ChoiceChip(
-                      label: Text(categoryLabel),
+                      label: Text(UiTranslations.t(categoryLabel)),
                       selected: isSelected,
                       onSelected: (selected) {
                         if (selected) {

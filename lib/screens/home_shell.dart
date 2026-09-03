@@ -166,12 +166,12 @@ class _PostSelectionPageState extends State<PostSelectionPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const PageHeader('投稿する'),
+              PageHeader(UiTranslations.t('投稿する')),
               const SizedBox(height: 32),
               _PostCard(
                 icon: Icons.chat_bubble_outline,
-                title: 'Tips投稿',
-                description: '旅先で役立つ情報や困りごとをシェアしよう',
+                title: UiTranslations.t('Tips投稿'),
+                description: UiTranslations.t('旅先で役立つ情報や困りごとをシェアしよう'),
                 onTap: () => showLocationPickerSheet(
                   context,
                   initialPosition: _selectedPosition,
@@ -189,8 +189,8 @@ class _PostSelectionPageState extends State<PostSelectionPage> {
               const SizedBox(height: 16),
               _PostCard(
                 icon: Icons.photo_camera_outlined,
-                title: '旅行写真',
-                description: '旅の思い出を写真で残そう',
+                title: UiTranslations.t('旅行写真'),
+                description: UiTranslations.t('旅の思い出を写真で残そう'),
                 onTap: () => showLocationPickerSheet(
                   context,
                   initialPosition: _selectedPosition,
@@ -205,7 +205,8 @@ class _PostSelectionPageState extends State<PostSelectionPage> {
                         if (photo == null) return;
                         if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('アップロード中...')),
+                          SnackBar(
+                              content: Text(UiTranslations.t('アップロード中...'))),
                         );
                         final result = await PhotoUploadService.uploadAndSave(
                           bytes: await photo.readAsBytes(),
@@ -217,8 +218,8 @@ class _PostSelectionPageState extends State<PostSelectionPage> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                               content: Text(result != null
-                                  ? '写真を投稿しました'
-                                  : 'アップロードに失敗しました')),
+                                  ? UiTranslations.t('写真を投稿しました')
+                                  : UiTranslations.t('アップロードに失敗しました'))),
                         );
                       },
                       onPickFromGallery: (visibility) async {
@@ -228,7 +229,8 @@ class _PostSelectionPageState extends State<PostSelectionPage> {
                         if (photo == null) return;
                         if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('アップロード中...')),
+                          SnackBar(
+                              content: Text(UiTranslations.t('アップロード中...'))),
                         );
                         final result = await PhotoUploadService.uploadAndSave(
                           bytes: await photo.readAsBytes(),
@@ -240,8 +242,8 @@ class _PostSelectionPageState extends State<PostSelectionPage> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                               content: Text(result != null
-                                  ? '写真を投稿しました'
-                                  : 'アップロードに失敗しました')),
+                                  ? UiTranslations.t('写真を投稿しました')
+                                  : UiTranslations.t('アップロードに失敗しました'))),
                         );
                       },
                     );
@@ -461,7 +463,7 @@ class ProfilePage extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.all(24),
           children: [
-            const PageHeader('プロフィール'),
+            PageHeader(UiTranslations.t('プロフィール')),
 
             const SizedBox(height: 8),
 
@@ -562,7 +564,7 @@ class ProfilePage extends StatelessWidget {
 
                         final name = profile.name.isNotEmpty
                             ? profile.name
-                            : user.displayName ?? '名前未設定';
+                            : user.displayName ?? UiTranslations.t('名前未設定');
 
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -607,7 +609,7 @@ class ProfilePage extends StatelessWidget {
                 );
               },
               icon: const Icon(Icons.style),
-              label: const Text('コレクションを見る'),
+              label: Text(UiTranslations.t('コレクションを見る')),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(52),
                 foregroundColor: AppColors.primary,
@@ -632,7 +634,7 @@ class ProfilePage extends StatelessWidget {
                 );
               },
               icon: const Icon(Icons.language),
-              label: const Text('言語と地域'),
+              label: Text(UiTranslations.t('言語と地域')),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(52),
                 foregroundColor: AppColors.primary,
@@ -650,7 +652,7 @@ class ProfilePage extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: () => AuthService.instance.signOut(),
               icon: const Icon(Icons.logout),
-              label: const Text('ログアウト'),
+              label: Text(UiTranslations.t('ログアウト')),
             ),
           ],
         );

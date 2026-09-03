@@ -14,6 +14,7 @@ import '../theme/app_colors.dart';
 import '../widgets/search_bar_widget.dart';
 import '../models/nearby_comment.dart';
 import '../models/travel_photo.dart';
+import '../models/store.dart';
 import '../widgets/current_location_dot.dart';
 import '../widgets/grouped_bubble_marker.dart';
 //import '../widgets/report_dialog.dart';
@@ -63,6 +64,7 @@ class _MapPageState extends State<MapPage> {
   List<NearbyComment> _nearbyComments = [];
   List<LocalHack> _localHacks = [];
   List<TravelPhoto> _nearbyPhotos = [];
+  List<Store> _stores = [];
   UserProfile? _currentProfile;
   bool _isLoading = true;
   final _alertService = NearbyAlertService();
@@ -253,6 +255,14 @@ List<Amenity> _amenities = [];
       debugPrint('Firestore photo fetch error: $e');
     }
 
+    List<Store> stores = [];
+    try {
+      stores = await _fetchStores()
+          .timeout(const Duration(milliseconds: 2500), onTimeout: () => []);
+    } catch (e) {
+      debugPrint('Firestore store fetch error: $e');
+    }
+
     if (!mounted) return;
     setState(() {
       _currentCenter = center;
@@ -260,6 +270,7 @@ List<Amenity> _amenities = [];
       _currentProfile = profile;
       _nearbyComments = comments;
       _nearbyPhotos = photos;
+      _stores = stores;
       _commentsError = commentsError;
       _isLoading = false;
     });
@@ -431,6 +442,65 @@ List<Amenity> _amenities = [];
     }
     results.sort((a, b) => a.distanceMeters.compareTo(b.distanceMeters));
     return results;
+  }
+
+  /// 登録済み店舗を全件取得する（地域コレクション連携までは、確認用に距離で
+  /// 絞り込まず全て表示する）。
+  Future<List<Store>> _fetchStores() async {
+    final snapshot =
+        await FirebaseFirestore.instance.collection('stores').get();
+    final results = <Store>[];
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      if (data['latitude'] == null || data['longitude'] == null) continue;
+      results.add(Store.fromMap(doc.id, data));
+    }
+    return results;
+  }
+
+  void _showStoreInfo(Store store) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.storefront, color: Colors.deepPurple),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    store.name,
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (store.address.isNotEmpty)
+              Row(
+                children: [
+                  const Icon(Icons.location_on_outlined, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(store.address)),
+                ],
+              ),
+            if (store.description.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(store.description),
+            ],
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
   }
 
   Color _getCategoryColor(String category) {
@@ -705,6 +775,25 @@ List<Amenity> _amenities = [];
                         alignment: Alignment.center,
                         child: CurrentLocationDot(skin: currentSkin),
                       ),
+                      // 登録済み店舗（Tips/写真モードに関わらず常に表示）
+                      for (final store in _stores)
+                        Marker(
+                          point: ll.LatLng(store.latitude, store.longitude),
+                          width: 40,
+                          height: 40,
+                          alignment: Alignment.bottomCenter,
+                          child: GestureDetector(
+                            onTap: () => _showStoreInfo(store),
+                            child: const Icon(
+                              Icons.storefront,
+                              color: Colors.deepPurple,
+                              size: 36,
+                              shadows: [
+                                Shadow(color: Colors.black38, blurRadius: 4),
+                              ],
+                            ),
+                          ),
+                        ),
                       if (!_isPhotoMode)
                         for (final entry in groupedComments.entries)
                           if (entry.value.isNotEmpty)
@@ -763,7 +852,7 @@ List<Amenity> _amenities = [];
                               ),
                             ),
                           ),
-                          for (final hack in _localHacks)
+                      for (final hack in _localHacks)
                         Marker(
                           point: ll.LatLng(hack.latitude, hack.longitude),
                           width: 80,
