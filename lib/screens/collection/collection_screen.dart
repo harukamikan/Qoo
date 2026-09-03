@@ -10,6 +10,7 @@ import '../../theme/app_colors.dart';
 import 'package:latlong2/latlong.dart' as ll;
 import '../../models/store.dart';
 import '../../services/store_repository.dart';
+import 'everyone_collection_screen.dart';
 
 /// 地域コレクション画面。グリッド型のご当地図鑑スタイルで表示する。
 class TravelCollectionScreen extends StatefulWidget {
@@ -19,19 +20,28 @@ class TravelCollectionScreen extends StatefulWidget {
   State<TravelCollectionScreen> createState() => _TravelCollectionScreenState();
 }
 
-class _TravelCollectionScreenState extends State<TravelCollectionScreen> {
+class _TravelCollectionScreenState extends State<TravelCollectionScreen>
+    with SingleTickerProviderStateMixin {
   List<TravelCollection> _collections = [];
   TravelCollection? _selectedCollection;
   List<CollectionSpot> _spots = [];
   Map<String, String> _postedPhotos = {};
   List<Store> _approvedStores = [];
   bool _loading = true;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadCollections();
     _loadApprovedStores();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadApprovedStores() async {
@@ -163,194 +173,215 @@ class _TravelCollectionScreenState extends State<TravelCollectionScreen> {
         title: Text(UiTranslations.t('ご当地コレクション')),
         backgroundColor: const Color(0xFFFDF6E9),
         elevation: 0,
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: AppColors.primary,
+          indicatorColor: AppColors.primary,
+          tabs: [
+            Tab(text: UiTranslations.t('マイコレクション')),
+            Tab(text: UiTranslations.t('みんなのコレクション')),
+          ],
+        ),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _collections.isEmpty
-              ? Center(child: Text(UiTranslations.t('コレクションがまだありません')))
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: const [
-                        BoxShadow(color: Colors.black12, blurRadius: 10),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (_selectedCollection != null) ...[
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 4, vertical: 8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _selectedCollection!.name,
-                                  style: const TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w900),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  _selectedCollection!.description,
-                                  style: const TextStyle(
-                                      color: AppColors.textGrey, fontSize: 13),
-                                ),
-                                const SizedBox(height: 10),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: LinearProgressIndicator(
-                                    value: _spots.isEmpty
-                                        ? 0
-                                        : _postedPhotos.length / _spots.length,
-                                    minHeight: 8,
-                                    backgroundColor: Colors.grey.shade200,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${_postedPhotos.length} / ${_spots.length} ${UiTranslations.t('達成')}',
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 8),
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
-                            childAspectRatio: 0.75,
-                          ),
-                          itemCount: _spots.length,
-                          itemBuilder: (context, index) {
-                            final spot = _spots[index];
-                            final photoUrl = _postedPhotos[spot.id];
-                            final done = photoUrl != null;
-                            return GestureDetector(
-                              onTap: done ? null : () => _postPhoto(spot),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFAF3E3),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                      color: const Color(0xFFE5D9BF)),
-                                ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _collections.isEmpty
+                  ? Center(child: Text(UiTranslations.t('コレクションがまだありません')))
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black12, blurRadius: 10),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (_selectedCollection != null) ...[
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 4, vertical: 8),
                                 child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Expanded(
-                                      child: ClipRRect(
-                                        borderRadius:
-                                            const BorderRadius.vertical(
-                                                top: Radius.circular(10)),
-                                        child: done
-                                            ? Image.network(photoUrl,
-                                                fit: BoxFit.cover,
-                                                width: double.infinity)
-                                            : Center(
-                                                child: Icon(
-                                                  Icons.camera_alt_outlined,
-                                                  color: Colors.grey.shade400,
-                                                  size: 28,
-                                                ),
-                                              ),
+                                    Text(
+                                      _selectedCollection!.name,
+                                      style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w900),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      _selectedCollection!.description,
+                                      style: const TextStyle(
+                                          color: AppColors.textGrey,
+                                          fontSize: 13),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: LinearProgressIndicator(
+                                        value: _spots.isEmpty
+                                            ? 0
+                                            : _postedPhotos.length /
+                                                _spots.length,
+                                        minHeight: 8,
+                                        backgroundColor: Colors.grey.shade200,
+                                        color: AppColors.primary,
                                       ),
                                     ),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 6, horizontal: 4),
-                                      child: Text(
-                                        spot.name,
-                                        textAlign: TextAlign.center,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold),
-                                      ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${_postedPhotos.length} / ${_spots.length} ${UiTranslations.t('達成')}',
+                                      style: const TextStyle(fontSize: 12),
                                     ),
                                   ],
                                 ),
                               ),
-                            );
-                          },
-                        ),
-                        if (_approvedStores.isNotEmpty) ...[
-                          const SizedBox(height: 24),
-                          Text(
-                            UiTranslations.t('お店コレクション'),
-                            style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.w900),
-                          ),
-                          const SizedBox(height: 8),
-                          GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              crossAxisSpacing: 8,
-                              mainAxisSpacing: 8,
-                              childAspectRatio: 0.75,
-                            ),
-                            itemCount: _approvedStores.length,
-                            itemBuilder: (context, index) {
-                              final store = _approvedStores[index];
-                              return GestureDetector(
-                                onTap: () => _postPhotoForStore(store),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFAF3E3),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                        color: const Color(0xFFE5D9BF)),
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      Expanded(
-                                        child: Center(
-                                          child: Icon(
-                                            Icons.storefront,
-                                            color: Colors.grey.shade400,
-                                            size: 28,
+                            ],
+                            const SizedBox(height: 8),
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                crossAxisSpacing: 8,
+                                mainAxisSpacing: 8,
+                                childAspectRatio: 0.75,
+                              ),
+                              itemCount: _spots.length,
+                              itemBuilder: (context, index) {
+                                final spot = _spots[index];
+                                final photoUrl = _postedPhotos[spot.id];
+                                final done = photoUrl != null;
+                                return GestureDetector(
+                                  onTap: done ? null : () => _postPhoto(spot),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFAF3E3),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                          color: const Color(0xFFE5D9BF)),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Expanded(
+                                          child: ClipRRect(
+                                            borderRadius:
+                                                const BorderRadius.vertical(
+                                                    top: Radius.circular(10)),
+                                            child: done
+                                                ? Image.network(photoUrl,
+                                                    fit: BoxFit.cover,
+                                                    width: double.infinity)
+                                                : Center(
+                                                    child: Icon(
+                                                      Icons.camera_alt_outlined,
+                                                      color:
+                                                          Colors.grey.shade400,
+                                                      size: 28,
+                                                    ),
+                                                  ),
                                           ),
                                         ),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 6, horizontal: 4),
-                                        child: Text(
-                                          store.name,
-                                          textAlign: TextAlign.center,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.bold),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 6, horizontal: 4),
+                                          child: Text(
+                                            spot.name,
+                                            textAlign: TextAlign.center,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold),
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
+                                );
+                              },
+                            ),
+                            if (_approvedStores.isNotEmpty) ...[
+                              const SizedBox(height: 24),
+                              Text(
+                                UiTranslations.t('お店コレクション'),
+                                style: const TextStyle(
+                                    fontSize: 18, fontWeight: FontWeight.w900),
+                              ),
+                              const SizedBox(height: 8),
+                              GridView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3,
+                                  crossAxisSpacing: 8,
+                                  mainAxisSpacing: 8,
+                                  childAspectRatio: 0.75,
                                 ),
-                              );
-                            },
-                          ),
-                        ],
-                      ],
+                                itemCount: _approvedStores.length,
+                                itemBuilder: (context, index) {
+                                  final store = _approvedStores[index];
+                                  return GestureDetector(
+                                    onTap: () => _postPhotoForStore(store),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFAF3E3),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                            color: const Color(0xFFE5D9BF)),
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          Expanded(
+                                            child: Center(
+                                              child: Icon(
+                                                Icons.storefront,
+                                                color: Colors.grey.shade400,
+                                                size: 28,
+                                              ),
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 6, horizontal: 4),
+                                            child: Text(
+                                              store.name,
+                                              textAlign: TextAlign.center,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
+          EveryoneCollectionScreen(
+            collectionName: _selectedCollection?.name ?? '',
+            spotIds: _spots.map((s) => s.id).toList(),
+          ),
+        ],
+      ),
     );
   }
 }

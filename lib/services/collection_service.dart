@@ -49,6 +49,16 @@ class CollectionService {
     }
     return map;
   }
+  /// 指定したスポットID群への、全ユーザーの投稿を取得する（みんなのコレクション用）。
+static Future<List<Map<String, dynamic>>> fetchAllPostsForSpots(
+    List<String> spotIds) async {
+  if (spotIds.isEmpty) return [];
+  final snapshot = await _db
+      .collection('collection_posts')
+      .where('spotId', whereIn: spotIds)
+      .get();
+  return snapshot.docs.map((doc) => doc.data()).toList();
+}
 
   /// スポットへの写真投稿を記録する（imageUrlはPhotoUploadServiceでアップロード済みのURL）。
   static Future<void> postToSpot({
@@ -63,4 +73,5 @@ class CollectionService {
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
+  
 }
