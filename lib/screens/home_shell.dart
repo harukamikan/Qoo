@@ -478,6 +478,7 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final inventoryData = InventoryProvider.of(context);
+    final user = AuthService.instance.currentUser;
 
     return AnimatedBuilder(
       animation: inventoryData,
@@ -514,6 +515,52 @@ class ProfilePage extends StatelessWidget {
                       child: _buildAvatarIcon(avatar),
                     ),
                   ),
+
+                  // ------------------------------------------
+                  // ログイン中のユーザー情報＆友達機能
+                  // ------------------------------------------
+                  if (user != null) ...[
+                    const SizedBox(height: 16),
+                    FutureBuilder<UserProfile?>(
+                      future: UserRepository.instance.fetchProfile(user.uid),
+                      builder: (context, snap) {
+                        final profile = snap.data;
+                        if (profile == null) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+
+                        final name = profile.name.isNotEmpty
+                            ? profile.name
+                            : user.displayName ?? UiTranslations.t('名前未設定');
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              name,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              user.email ?? '',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: AppColors.textGrey,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            FriendManagementPanel(profile: profile),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
                 ],
               ),
             ),
