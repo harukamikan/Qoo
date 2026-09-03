@@ -27,6 +27,11 @@ import '../screens/gacha/inventory_manager.dart';
 import '../screens/gacha/gacha_item.dart';
 import 'package:flutter/foundation.dart';
 import '../models/user_profile.dart';
+import 'package:flutter/foundation.dart';
+import '../models/user_profile.dart';
+import '../models/local_hack.dart';
+import '../widgets/local_hack_marker.dart';
+import '../services/local_hack_service.dart';
 
 /// 現在地からこの半径（メートル）以内の投稿だけを表示する。
 const double nearbyRadiusMeters = 1000;
