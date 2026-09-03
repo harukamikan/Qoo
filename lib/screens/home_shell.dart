@@ -8,6 +8,7 @@ import 'gacha/gacha_screen.dart';
 import 'gacha/coin_manager.dart';
 import 'gacha/inventory_manager.dart';
 import 'gacha/collection_screen.dart';
+import 'collection/collection_screen.dart';
 import '../widgets/post_tips_dialog.dart';
 import '../widgets/photo_capture_sheet.dart';
 import '../widgets/friend_management_panel.dart';
@@ -19,6 +20,7 @@ import '../models/user_profile.dart';
 import '../widgets/location_picker_sheet.dart';
 import 'friend_photo_feed_screen.dart';
 import 'profile/language_region_screen.dart';
+import 'admin/store_approval_screen.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -540,7 +542,48 @@ class ProfilePage extends StatelessWidget {
               ),
             ),
 
+                       const SizedBox(height: 16),
+            // ------------------------------------------
+            // 地域コレクション
+            // ------------------------------------------
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const TravelCollectionScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.map),
+              label: const Text('地域コレクション'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(52),
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
             const SizedBox(height: 16),
+            OutlinedButton.icon(
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const StoreApprovalScreen(),
+      ),
+    );
+  },
+  icon: const Icon(Icons.admin_panel_settings),
+  label: const Text('店舗承認（Admin）'),
+  style: OutlinedButton.styleFrom(
+    minimumSize: const Size.fromHeight(52),
+    foregroundColor: Colors.orange,
+    side: const BorderSide(color: Colors.orange),
+  ),
+),
+const SizedBox(height: 16),
 
             // ------------------------------------------
             // 言語と地域

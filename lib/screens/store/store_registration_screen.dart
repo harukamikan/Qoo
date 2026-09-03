@@ -30,6 +30,8 @@ class _StoreRegistrationScreenState extends State<StoreRegistrationScreen> {
 
   ll.LatLng? _position;
   String _address = '';
+  String _category = 'グルメ';
+final List<String> _categories = ['グルメ', '文化', '温泉', '交通', 'その他'];
   bool _saving = false;
 
   @override
@@ -83,6 +85,7 @@ class _StoreRegistrationScreenState extends State<StoreRegistrationScreen> {
           latitude: _position!.latitude,
           longitude: _position!.longitude,
           phoneNumber: _phoneController.text.trim(),
+          category: _category,
         ),
       );
     } catch (e) {
@@ -173,6 +176,21 @@ class _StoreRegistrationScreenState extends State<StoreRegistrationScreen> {
                   helperText: 'SMS等での認証は行いません。連絡先として保存されます',
                   border: OutlineInputBorder(),
                 ),
+              ),
+              const SizedBox(height: 32),
+                            const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: _category,
+                decoration: const InputDecoration(
+                  labelText: 'カテゴリ',
+                  border: OutlineInputBorder(),
+                ),
+                items: _categories.map((cat) {
+                  return DropdownMenuItem(value: cat, child: Text(cat));
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) setState(() => _category = value);
+                },
               ),
               const SizedBox(height: 32),
 
