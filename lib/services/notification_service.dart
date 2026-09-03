@@ -18,7 +18,7 @@ class NotificationService {
       android: androidSettings,
       iOS: iosSettings,
     );
-    await _notificationsPlugin.initialize(initSettings);
+    await _notificationsPlugin.initialize(settings: initSettings);
   }
 
   // 500m以内のHackリストから通知を送るべきものを判定して通知する
@@ -82,10 +82,10 @@ class NotificationService {
         : '「${hacks.first.title}」など${hacks.length}件のHackがあります！';
 
     await _notificationsPlugin.show(
-      0,
-      title,
-      body,
-      notificationDetails,
+      id: 0,
+      title: title,
+      body: body,
+      notificationDetails: notificationDetails,
     );
   }
 }
