@@ -13,7 +13,7 @@ class Amenity {
 
 /// OpenStreetMapのOverpass APIから、周辺のトイレ・ゴミ箱を取得するサービス。
 class OsmAmenityService {
-  static const _endpoint = 'https://overpass-api.de/api/interpreter';
+  static const _endpoint = 'https://overpass.kumi.systems/api/interpreter';
 
   /// 指定範囲（バウンディングボックス）内のトイレ・ゴミ箱を取得する。
   static Future<List<Amenity>> fetchAmenities({
