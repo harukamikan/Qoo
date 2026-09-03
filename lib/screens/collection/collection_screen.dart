@@ -9,6 +9,7 @@ import '../../theme/app_colors.dart';
 import 'package:latlong2/latlong.dart' as ll;
 import '../../models/store.dart';
 import '../../services/store_repository.dart';
+import 'everyone_collection_screen.dart';
 
 /// 地域コレクション画面。グリッド型のご当地図鑑スタイルで表示する。
 class TravelCollectionScreen extends StatefulWidget {
@@ -18,19 +19,28 @@ class TravelCollectionScreen extends StatefulWidget {
   State<TravelCollectionScreen> createState() => _TravelCollectionScreenState();
 }
 
-class _TravelCollectionScreenState extends State<TravelCollectionScreen> {
+class _TravelCollectionScreenState extends State<TravelCollectionScreen>
+    with SingleTickerProviderStateMixin {
   List<TravelCollection> _collections = [];
   TravelCollection? _selectedCollection;
   List<CollectionSpot> _spots = [];
   Map<String, String> _postedPhotos = {};
   List<Store> _approvedStores = [];
   bool _loading = true;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadCollections();
         _loadApprovedStores();
+  }
+  
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
     Future<void> _loadApprovedStores() async {
     final stores = await StoreRepository.instance.fetchApprovedStores();
@@ -159,8 +169,20 @@ Future<void> _postPhotoForStore(Store store) async {
         title: const Text('ご当地コレクション'),
         backgroundColor: const Color(0xFFFDF6E9),
         elevation: 0,
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: AppColors.primary,
+          indicatorColor: AppColors.primary,
+          tabs: const [
+            Tab(text: 'マイコレクション'),
+            Tab(text: 'みんなのコレクション'),
+          ],
+        ),
       ),
-      body: _loading
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _loading
           ? const Center(child: CircularProgressIndicator())
           : _collections.isEmpty
               ? const Center(child: Text('コレクションがまだありません'))
@@ -330,6 +352,12 @@ Future<void> _postPhotoForStore(Store store) async {
                     ),
                   ),
                 ),
+                 EveryoneCollectionScreen(
+            collectionName: _selectedCollection?.name ?? '',
+            spotIds: _spots.map((s) => s.id).toList(),
+          ),
+        ],
+      ),
     );
   }
 }
