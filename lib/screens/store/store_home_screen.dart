@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../models/store.dart';
 import '../../services/auth_service.dart';
 import '../../services/store_repository.dart';
+import '../../services/ui_translations.dart';
 import '../map_screen.dart';
 
 /// 登録済み店舗オーナー向けのホーム画面。
@@ -29,22 +30,23 @@ class _StoreHomeScreenState extends State<StoreHomeScreen> {
     try {
       await user.reload(); // 直近で確認済みになっていないか最新化してから送る
       if (user.emailVerified) {
-        _showMessage('既にメール確認済みです');
+        _showMessage(UiTranslations.t('既にメール確認済みです'));
       } else {
         await user.sendEmailVerification();
         debugPrint('sendEmailVerification: sent to ${user.email}');
-        _showMessage('確認メールを ${user.email} に再送信しました');
+        _showMessage(
+            '${UiTranslations.t('確認メールを')} ${user.email} ${UiTranslations.t('に再送信しました')}');
       }
     } on FirebaseAuthException catch (e) {
       debugPrint('sendEmailVerification failed: ${e.code} ${e.message}');
       if (e.code == 'too-many-requests') {
-        _showMessage('送信しすぎです。しばらく待ってから再度お試しください');
+        _showMessage(UiTranslations.t('送信しすぎです。しばらく待ってから再度お試しください'));
       } else {
-        _showMessage('送信に失敗しました（${e.code}）');
+        _showMessage('${UiTranslations.t('送信に失敗しました')}（${e.code}）');
       }
     } catch (e) {
       debugPrint('sendEmailVerification failed: $e');
-      _showMessage('送信に失敗しました');
+      _showMessage(UiTranslations.t('送信に失敗しました'));
     } finally {
       if (mounted) setState(() => _sendingVerification = false);
     }
@@ -63,9 +65,9 @@ class _StoreHomeScreenState extends State<StoreHomeScreen> {
     final emailVerified = user?.emailVerified ?? false;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('店舗管理')),
+      appBar: AppBar(title: Text(UiTranslations.t('店舗管理'))),
       body: uid == null
-          ? const Center(child: Text('ログイン情報を取得できませんでした'))
+          ? Center(child: Text(UiTranslations.t('ログイン情報を取得できませんでした')))
           : FutureBuilder<Store?>(
               future: StoreRepository.instance.fetchStore(uid),
               builder: (context, snapshot) {
@@ -74,7 +76,8 @@ class _StoreHomeScreenState extends State<StoreHomeScreen> {
                 }
                 final store = snapshot.data;
                 if (store == null) {
-                  return const Center(child: Text('店舗情報が見つかりませんでした'));
+                  return Center(
+                      child: Text(UiTranslations.t('店舗情報が見つかりませんでした')));
                 }
                 return ListView(
                   padding: const EdgeInsets.all(24),
@@ -90,17 +93,15 @@ class _StoreHomeScreenState extends State<StoreHomeScreen> {
                     Row(
                       children: [
                         Icon(
-                          emailVerified
-                              ? Icons.verified
-                              : Icons.error_outline,
+                          emailVerified ? Icons.verified : Icons.error_outline,
                           size: 16,
                           color: emailVerified ? Colors.green : Colors.orange,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           emailVerified
-                              ? 'メール確認済み'
-                              : 'メール未確認（${user?.email ?? ''}）',
+                              ? UiTranslations.t('メール確認済み')
+                              : '${UiTranslations.t('メール未確認')}（${user?.email ?? ''}）',
                           style: const TextStyle(fontSize: 13),
                         ),
                       ],
@@ -110,24 +111,26 @@ class _StoreHomeScreenState extends State<StoreHomeScreen> {
                       Align(
                         alignment: Alignment.centerLeft,
                         child: TextButton.icon(
-                          onPressed:
-                              _sendingVerification ? null : _resendVerificationEmail,
+                          onPressed: _sendingVerification
+                              ? null
+                              : _resendVerificationEmail,
                           icon: _sendingVerification
                               ? const SizedBox(
                                   width: 16,
                                   height: 16,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2),
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
                                 )
                               : const Icon(Icons.email_outlined, size: 18),
-                          label: const Text('確認メールを再送信'),
+                          label: Text(UiTranslations.t('確認メールを再送信')),
                         ),
                       ),
-                      const Padding(
-                        padding: EdgeInsets.only(left: 4),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4),
                         child: Text(
-                          '届かない場合は迷惑メールフォルダもご確認ください',
-                          style: TextStyle(fontSize: 11, color: Colors.black45),
+                          UiTranslations.t('届かない場合は迷惑メールフォルダもご確認ください'),
+                          style: const TextStyle(
+                              fontSize: 11, color: Colors.black45),
                         ),
                       ),
                     ],
@@ -136,8 +139,8 @@ class _StoreHomeScreenState extends State<StoreHomeScreen> {
                       leading: const Icon(Icons.location_on_outlined),
                       title: Text(store.address),
                       subtitle: Text(
-                        '緯度: ${store.latitude.toStringAsFixed(5)} '
-                        '経度: ${store.longitude.toStringAsFixed(5)}',
+                        '${UiTranslations.t('緯度')}: ${store.latitude.toStringAsFixed(5)} '
+                        '${UiTranslations.t('経度')}: ${store.longitude.toStringAsFixed(5)}',
                       ),
                     ),
                     ListTile(
@@ -145,10 +148,10 @@ class _StoreHomeScreenState extends State<StoreHomeScreen> {
                       title: Text(store.phoneNumber),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
-                      '店舗コメント・Local Hackの編集は準備中です',
+                    Text(
+                      UiTranslations.t('店舗コメント・Local Hackの編集は準備中です'),
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.black54),
+                      style: const TextStyle(color: Colors.black54),
                     ),
                     const SizedBox(height: 24),
                     // 店舗ロールのままだと観光客側の画面（地図タブ等）には
@@ -159,12 +162,12 @@ class _StoreHomeScreenState extends State<StoreHomeScreen> {
                         MaterialPageRoute(builder: (_) => const MapPage()),
                       ),
                       icon: const Icon(Icons.map_outlined),
-                      label: const Text('観光客側の地図をプレビュー'),
+                      label: Text(UiTranslations.t('観光客側の地図をプレビュー')),
                     ),
                     const SizedBox(height: 12),
                     OutlinedButton(
                       onPressed: () => AuthService.instance.signOut(),
-                      child: const Text('ログアウト'),
+                      child: Text(UiTranslations.t('ログアウト')),
                     ),
                   ],
                 );
