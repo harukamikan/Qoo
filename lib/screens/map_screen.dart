@@ -14,14 +14,17 @@ import '../models/nearby_comment.dart';
 import '../models/travel_photo.dart';
 import '../widgets/current_location_dot.dart';
 import '../widgets/grouped_bubble_marker.dart';
-//import '../widgets/report_dialog.dart';
 import '../widgets/post_tips_dialog.dart';
 import '../widgets/location_tips_modal.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/photo_upload_service.dart';
 import '../widgets/photo_capture_sheet.dart';
 
-// ガチャと共有するコイン管理Providerのインポート（パスはプロジェクト構成に合わせて調整してください）
+// ローカルハック用サービスのインポート
+import '../models/local_hack.dart';
+import '../services/local_hack_service.dart';
+
+// ガチャと共有するコイン管理Provider
 import '../screens/gacha/coin_manager.dart';
 import '../screens/gacha/inventory_manager.dart';
 import '../screens/gacha/gacha_item.dart';
@@ -31,15 +34,13 @@ const double nearbyRadiusMeters = 1000;
 
 final ll.LatLng fukuokaFallback = ll.LatLng(33.5902, 130.4017);
 
-/// 現在地取得がなぜうまくいかなかったかを表す。成功時は none。
 enum LocationIssue {
   none,
-  serviceDisabled, // 端末の位置情報サービス自体がオフ
-  permissionDenied, // 今回拒否された（次回また聞ける）
-  permissionDeniedForever, // 完全拒否（設定から手動で有効にするしかない）
+  serviceDisabled,
+  permissionDenied,
+  permissionDeniedForever,
 }
 
-/// タップ時に凹むアニメーションと振動フィードバックを持つジャム瓶ボタン
 class JamJarButton extends StatefulWidget {
   final VoidCallback onTap;
 
@@ -124,10 +125,14 @@ class _MapPageState extends State<MapPage> {
   LocationIssue _locationIssue = LocationIssue.none;
   String? _commentsError;
 
+  // --- ローカルハック（ルール）管理 ---
+  final LocalHackService _hackService = LocalHackService();
+  List<LocalHack> _nearbyHacks = [];
+  bool _showLocalHacks = true; // ON/OFF切り替えフラグ
+
   String _selectedCategoryFilter = 'All';
   String _searchKeyword = '';
-  // --- 地図モード（Tips表示 / 写真表示の切り替え） ---
-  bool _isPhotoMode = false; // false = Tips(💬)モード, true = 写真(📷)モード
+  bool _isPhotoMode = false;
 
   final List<String> _categoryFilterList = [
     'All',
@@ -181,14 +186,12 @@ class _MapPageState extends State<MapPage> {
         .update({'helpful_count': c.helpfulCount}).catchError((_) {});
   }
 
-  /// Tips投稿成功時にコインを加算して通知を出す共通処理
   void _handleTipPosted(NearbyComment newTip) {
     setState(() {
       _nearbyComments.insert(0, newTip);
       _carouselIndices[_toLocationKey(newTip.position)] = 0;
     });
 
-    // コインを30加算
     CoinDataProvider.of(context).addCoins(30);
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -276,6 +279,12 @@ class _MapPageState extends State<MapPage> {
       locationIssue = result.issue;
     } catch (_) {}
 
+    // 周辺ローカルハックの取得
+    final hacks = _hackService.getHacksAroundUser(
+      userLat: center.latitude,
+      userLng: center.longitude,
+    );
+
     List<NearbyComment> comments = [];
     String? commentsError;
     try {
@@ -301,6 +310,7 @@ class _MapPageState extends State<MapPage> {
       _locationIssue = locationIssue;
       _nearbyComments = comments;
       _nearbyPhotos = photos;
+      _nearbyHacks = hacks;
       _commentsError = commentsError;
       _isLoading = false;
     });
@@ -465,6 +475,58 @@ class _MapPageState extends State<MapPage> {
     }
   }
 
+  void _showHackDetailModal(LocalHack hack) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        maxChildSize: 0.85,
+        minChildSize: 0.3,
+        expand: false,
+        builder: (context, scrollController) => Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: ListView(
+            controller: scrollController,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Text(
+                hack.title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Chip(
+                label: Text(hack.category),
+                backgroundColor: Colors.amber.shade100,
+              ),
+              const Divider(height: 24),
+              Text(
+                hack.content,
+                style: const TextStyle(fontSize: 15, height: 1.5),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _deleteSingleTip(
     NearbyComment comment,
     BuildContext sheetCtx,
@@ -524,7 +586,6 @@ class _MapPageState extends State<MapPage> {
     }
   }
 
-  /// ジャム瓶タップ時に「いいねしたTipsの一覧」を表示するモーダル
   void _showLikedTipsModal() {
     final likedComments = _nearbyComments
         .where((comment) => _myHelpfulIds.contains(comment.id))
@@ -798,7 +859,7 @@ class _MapPageState extends State<MapPage> {
                       context,
                       targetPosition: point,
                       currentCenter: _currentCenter,
-                      onPosted: _handleTipPosted, // コイン加算対応
+                      onPosted: _handleTipPosted,
                     );
                   },
                 ),
@@ -811,6 +872,7 @@ class _MapPageState extends State<MapPage> {
                   ),
                   MarkerLayer(
                     markers: [
+                      // 現在地ピン
                       Marker(
                         point: _currentCenter,
                         width: currentSkin != null ? 48 : 24,
@@ -818,6 +880,34 @@ class _MapPageState extends State<MapPage> {
                         alignment: Alignment.center,
                         child: CurrentLocationDot(skin: currentSkin),
                       ),
+                      // ローカルハック（ルール）ピン（_showLocalHacksがtrueの時のみ表示）
+                      if (_showLocalHacks)
+                        for (final hack in _nearbyHacks)
+                          Marker(
+                            point: ll.LatLng(hack.latitude, hack.longitude),
+                            width: 44,
+                            height: 44,
+                            child: GestureDetector(
+                              onTap: () => _showHackDetailModal(hack),
+                              child: Container(
+                                decoration: const BoxDecoration(
+                                  color: Colors.amber,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black26,
+                                      blurRadius: 6,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: const Center(
+                                  child: Text('💡', style: TextStyle(fontSize: 22)),
+                                ),
+                              ),
+                            ),
+                          ),
+                      // Tips モード時のバブルピン
                       if (!_isPhotoMode)
                         for (final entry in groupedComments.entries)
                           if (entry.value.isNotEmpty)
@@ -844,10 +934,11 @@ class _MapPageState extends State<MapPage> {
                                   isHelpfulByMe: _isHelpfulByMe,
                                   onDeleteTip: _deleteSingleTip,
                                   onToggleHelpful: _toggleHelpful,
-                                  onPosted: _handleTipPosted, // コイン加算対応
+                                  onPosted: _handleTipPosted,
                                 ),
                               ),
                             ),
+                      // 写真モード時のピン
                       if (_isPhotoMode)
                         for (final entry in _getGroupedPhotos().entries)
                           Marker(
@@ -926,7 +1017,7 @@ class _MapPageState extends State<MapPage> {
                 ),
               ),
 
-              // --- ジャム瓶ボタン（富士山デザイン・拡大・赤枠位置・押し込みアニメーション＆振動つき） ---
+              // ジャム瓶ボタン
               Positioned(
                 right: 80,
                 bottom: 90,
@@ -935,12 +1026,42 @@ class _MapPageState extends State<MapPage> {
                 ),
               ),
 
-              // --- ズームイン・アウトボタン ---
+              // --- ズーム ＆ ローカルハック切り替えボタン ---
               Positioned(
                 right: 24,
                 bottom: 165,
                 child: Column(
                   children: [
+                    // ローカルルール（ハック）ピンの表示/非表示トグルボタン
+                    FloatingActionButton.small(
+                      heroTag: 'toggle_hacks_btn',
+                      backgroundColor:
+                          _showLocalHacks ? Colors.amber : Colors.white,
+                      foregroundColor:
+                          _showLocalHacks ? Colors.white : AppColors.textGrey,
+                      onPressed: () {
+                        setState(() {
+                          _showLocalHacks = !_showLocalHacks;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              _showLocalHacks
+                                  ? 'ローカルルールを表示しました'
+                                  : 'ローカルルールを非表示にしました',
+                            ),
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      },
+                      tooltip: 'ルール表示切替',
+                      child: Icon(
+                        _showLocalHacks
+                            ? Icons.lightbulb
+                            : Icons.lightbulb_outline,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     FloatingActionButton.small(
                       heroTag: 'zoom_in_btn',
                       backgroundColor: Colors.white,
@@ -1004,7 +1125,7 @@ class _MapPageState extends State<MapPage> {
                           context,
                           targetPosition: _currentCenter,
                           currentCenter: _currentCenter,
-                          onPosted: _handleTipPosted, // コイン加算対応
+                          onPosted: _handleTipPosted,
                         ),
                 icon: Icon(_isPhotoMode ? Icons.camera_alt : Icons.add_comment),
                 label: Text(_isPhotoMode ? '写真を撮る' : '現在地にTips投稿'),
@@ -1037,7 +1158,7 @@ class _MapPageState extends State<MapPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('写真を投稿しました')),
       );
-      await _reloadPhotos(); // 写真リストを更新して即座にマップに反映
+      await _reloadPhotos();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('アップロードに失敗しました')),
@@ -1079,7 +1200,7 @@ class _MapPageState extends State<MapPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('写真を投稿しました')),
       );
-      await _reloadPhotos(); // 写真リストを更新して即座にマップに反映
+      await _reloadPhotos();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('アップロードに失敗しました')),
