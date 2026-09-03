@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../services/ui_translations.dart';
 
 enum PhotoVisibilityChoice { public, friends }
 
@@ -46,15 +47,16 @@ class _PhotoCaptureSheetState extends State<PhotoCaptureSheet> {
             ),
             ListTile(
               leading: const Icon(Icons.camera_alt, color: AppColors.primary),
-              title: const Text('今から撮る'),
+              title: Text(UiTranslations.t('今から撮る')),
               onTap: () {
                 Navigator.pop(context);
                 widget.onTakePhoto(_visibilityValue);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: AppColors.primary),
-              title: const Text('アルバムから選ぶ'),
+              leading:
+                  const Icon(Icons.photo_library, color: AppColors.primary),
+              title: Text(UiTranslations.t('アルバムから選ぶ')),
               onTap: () {
                 Navigator.pop(context);
                 widget.onPickFromGallery(_visibilityValue);
@@ -66,22 +68,22 @@ class _PhotoCaptureSheetState extends State<PhotoCaptureSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    '公開範囲',
-                    style: TextStyle(fontWeight: FontWeight.w700),
+                  Text(
+                    UiTranslations.t('公開範囲'),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 8),
                   SegmentedButton<PhotoVisibilityChoice>(
-                    segments: const [
+                    segments: [
                       ButtonSegment(
                         value: PhotoVisibilityChoice.public,
-                        label: Text('全体公開'),
-                        icon: Icon(Icons.public),
+                        label: Text(UiTranslations.t('全体公開')),
+                        icon: const Icon(Icons.public),
                       ),
                       ButtonSegment(
                         value: PhotoVisibilityChoice.friends,
-                        label: Text('友達のみ'),
-                        icon: Icon(Icons.group),
+                        label: Text(UiTranslations.t('友達のみ')),
+                        icon: const Icon(Icons.group),
                       ),
                     ],
                     selected: {_visibility},

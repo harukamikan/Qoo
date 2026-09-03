@@ -4,6 +4,7 @@ import '../models/friend_request.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
 import '../services/friend_service.dart';
+import '../services/ui_translations.dart';
 import '../theme/app_colors.dart';
 
 class FriendManagementPanel extends StatefulWidget {
@@ -54,7 +55,7 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('友達IDを更新しました')),
+        SnackBar(content: Text(UiTranslations.t('友達IDを更新しました'))),
       );
       setState(() {});
     } catch (e) {
@@ -84,7 +85,7 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('友達申請を送りました')),
+        SnackBar(content: Text(UiTranslations.t('友達申請を送りました'))),
       );
       _searchController.clear();
       setState(() {});
@@ -110,39 +111,43 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
       children: [
         const SizedBox(height: 24),
         _SectionCard(
-          title: '友達ID',
+          title: UiTranslations.t('友達ID'),
           children: [
             TextField(
               controller: _friendCodeController,
-              decoration: const InputDecoration(
-                labelText: '公開ID',
-                helperText: 'このIDで検索されます',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: UiTranslations.t('公開ID'),
+                helperText: UiTranslations.t('このIDで検索されます'),
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _savingCode ? null : _saveFriendCode,
-              child: Text(_savingCode ? '保存中...' : 'IDを保存'),
+              child: Text(_savingCode
+                  ? UiTranslations.t('保存中...')
+                  : UiTranslations.t('IDを保存')),
             ),
           ],
         ),
         const SizedBox(height: 16),
         _SectionCard(
-          title: 'ID検索して申請',
+          title: UiTranslations.t('ID検索して申請'),
           children: [
             TextField(
               controller: _searchController,
-              decoration: const InputDecoration(
-                labelText: '友達IDを入力',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: UiTranslations.t('友達IDを入力'),
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
             ElevatedButton.icon(
               onPressed: _sendingRequest ? null : _sendRequest,
               icon: const Icon(Icons.person_add),
-              label: Text(_sendingRequest ? '送信中...' : '友達申請'),
+              label: Text(_sendingRequest
+                  ? UiTranslations.t('送信中...')
+                  : UiTranslations.t('友達申請')),
             ),
           ],
         ),
@@ -152,7 +157,7 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
           builder: (context, snapshot) {
             final requests = snapshot.data ?? const [];
             return _SectionCard(
-              title: '友達申請',
+              title: UiTranslations.t('友達申請'),
               children: [
                 if (snapshot.connectionState == ConnectionState.waiting)
                   const Padding(
@@ -160,7 +165,7 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
                     child: LinearProgressIndicator(),
                   ),
                 if (requests.isEmpty && snapshot.connectionState != ConnectionState.waiting)
-                  const Text('今は申請がありません'),
+                  Text(UiTranslations.t('今は申請がありません')),
                 for (final request in requests)
                   _RequestTile(
                     request: request,
@@ -185,7 +190,7 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
           builder: (context, snapshot) {
             final friends = snapshot.data ?? const [];
             return _SectionCard(
-              title: '友達一覧',
+              title: UiTranslations.t('友達一覧'),
               children: [
                 if (snapshot.connectionState == ConnectionState.waiting)
                   const Padding(
@@ -193,7 +198,7 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
                     child: LinearProgressIndicator(),
                   ),
                 if (friends.isEmpty && snapshot.connectionState != ConnectionState.waiting)
-                  const Text('まだ友達がいません'),
+                  Text(UiTranslations.t('まだ友達がいません')),
                 for (final friend in friends)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
@@ -208,7 +213,7 @@ class _FriendManagementPanelState extends State<FriendManagementPanel> {
                         if (!context.mounted) return;
                         setState(() {});
                       },
-                      child: const Text('削除'),
+                      child: Text(UiTranslations.t('削除')),
                     ),
                   ),
               ],
@@ -274,8 +279,14 @@ class _RequestTile extends StatelessWidget {
       trailing: Wrap(
         spacing: 8,
         children: [
-          OutlinedButton(onPressed: onDecline, child: const Text('拒否')),
-          ElevatedButton(onPressed: onAccept, child: const Text('承認')),
+          OutlinedButton(
+            onPressed: onDecline,
+            child: Text(UiTranslations.t('拒否')),
+          ),
+          ElevatedButton(
+            onPressed: onAccept,
+            child: Text(UiTranslations.t('承認')),
+          ),
         ],
       ),
     );
