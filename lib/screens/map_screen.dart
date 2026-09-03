@@ -7,11 +7,15 @@ import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/nearby_alert_service.dart';
+import '../services/auth_service.dart';
+import '../services/user_repository.dart';
+import '../services/ui_translations.dart';
 import '../utils/geo_utils.dart';
 import '../theme/app_colors.dart';
 import '../widgets/search_bar_widget.dart';
 import '../models/nearby_comment.dart';
 import '../models/travel_photo.dart';
+import '../models/store.dart';
 import '../widgets/current_location_dot.dart';
 import '../widgets/grouped_bubble_marker.dart';
 //import '../widgets/report_dialog.dart';
@@ -20,11 +24,15 @@ import '../widgets/location_tips_modal.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/photo_upload_service.dart';
 import '../widgets/photo_capture_sheet.dart';
-
-// ガチャと共有するコイン管理Providerのインポート（パスはプロジェクト構成に合わせて調整してください）
 import '../screens/gacha/coin_manager.dart';
 import '../screens/gacha/inventory_manager.dart';
 import '../screens/gacha/gacha_item.dart';
+import 'package:flutter/foundation.dart';
+import '../models/user_profile.dart';
+import '../models/local_hack.dart';
+import '../widgets/local_hack_marker.dart';
+import '../services/local_hack_service.dart';
+import '../services/osm_amenity_service.dart';
 
 /// 現在地からこの半径（メートル）以内の投稿だけを表示する。
 const double nearbyRadiusMeters = 1000;
@@ -107,6 +115,11 @@ class _JamJarButtonState extends State<JamJarButton> {
   }
 }
 
+enum MapPhotoFilter {
+  publicOnly,
+  friendsOnly,
+}
+
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
 
@@ -118,16 +131,22 @@ class _MapPageState extends State<MapPage> {
   final MapController _mapController = MapController();
   ll.LatLng _currentCenter = fukuokaFallback;
   List<NearbyComment> _nearbyComments = [];
+  List<LocalHack> _localHacks = [];
   List<TravelPhoto> _nearbyPhotos = [];
+  List<Store> _stores = [];
+  UserProfile? _currentProfile;
   bool _isLoading = true;
   final _alertService = NearbyAlertService();
   LocationIssue _locationIssue = LocationIssue.none;
   String? _commentsError;
+  MapPhotoFilter _photoFilter = MapPhotoFilter.publicOnly;
 
   String _selectedCategoryFilter = 'All';
   String _searchKeyword = '';
   // --- 地図モード（Tips表示 / 写真表示の切り替え） ---
   bool _isPhotoMode = false; // false = Tips(💬)モード, true = 写真(📷)モード
+  bool _showAmenities = false;
+List<Amenity> _amenities = [];
 
   final List<String> _categoryFilterList = [
     'All',
@@ -140,6 +159,40 @@ class _MapPageState extends State<MapPage> {
     'Other',
   ];
 
+Widget _buildCurrentLocationMarker(GachaItem? skin) {
+  if (skin == null) {
+    return const CurrentLocationDot();
+  }
+
+  final isAsset = skin.isAssetImage ||
+      skin.iconOrAsset.startsWith('assets/') ||
+      skin.iconOrAsset.endsWith('.png') ||
+      skin.iconOrAsset.endsWith('.jpg') ||
+      skin.iconOrAsset.endsWith('.jpeg');
+
+  if (isAsset) {
+    return Container(
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)], // ← shadows から boxShadow に変更
+      ),
+      child: ClipOval(
+        child: Image.asset(
+          skin.iconOrAsset,
+          width: 44,
+          height: 44,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return const CurrentLocationDot();
+          },
+        ),
+      ),
+    );
+  }
+
+  return CurrentLocationDot(skin: skin);
+}
+  
   final Map<String, int> _carouselIndices = {};
   Timer? _carouselTimer;
 
@@ -206,6 +259,7 @@ class _MapPageState extends State<MapPage> {
     _loadMyHelpfulIds();
     _startCarouselTimer();
     _alertService.start();
+    _localHacks = LocalHackService.initialHacks;
   }
 
   void _startCarouselTimer() {
@@ -265,9 +319,15 @@ class _MapPageState extends State<MapPage> {
 
     ll.LatLng center = fukuokaFallback;
     LocationIssue locationIssue = LocationIssue.none;
+    UserProfile? profile;
     try {
+      final uid = AuthService.instance.uid;
+      if (uid != null) {
+        profile = await UserRepository.instance.fetchProfile(uid);
+      }
+
       final result = await _getCurrentPosition().timeout(
-        const Duration(seconds: 2),
+        const Duration(seconds: 10),
         onTimeout: () => (position: null, issue: LocationIssue.serviceDisabled),
       );
       if (result.position != null) {
@@ -290,17 +350,30 @@ class _MapPageState extends State<MapPage> {
     try {
       photos = await _fetchNearbyPhotos(
         center,
+        currentUserId: AuthService.instance.uid,
+        friendIds: profile?.friends.toSet() ?? const {},
+        filter: _photoFilter,
       ).timeout(const Duration(milliseconds: 2500), onTimeout: () => []);
     } catch (e) {
       debugPrint('Firestore photo fetch error: $e');
+    }
+
+    List<Store> stores = [];
+    try {
+      stores = await _fetchStores()
+          .timeout(const Duration(milliseconds: 2500), onTimeout: () => []);
+    } catch (e) {
+      debugPrint('Firestore store fetch error: $e');
     }
 
     if (!mounted) return;
     setState(() {
       _currentCenter = center;
       _locationIssue = locationIssue;
+      _currentProfile = profile;
       _nearbyComments = comments;
       _nearbyPhotos = photos;
+      _stores = stores;
       _commentsError = commentsError;
       _isLoading = false;
     });
@@ -354,9 +427,12 @@ class _MapPageState extends State<MapPage> {
   Future<({ll.LatLng? position, LocationIssue issue})>
       _getCurrentPosition() async {
     try {
-      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        return (position: null, issue: LocationIssue.serviceDisabled);
+      // Web環境以外（iOS/Android実機・エミュレータ）の場合のみ端末の位置情報スイッチを確認
+      if (!kIsWeb) {
+        final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (!serviceEnabled) {
+          return (position: null, issue: LocationIssue.serviceDisabled);
+        }
       }
 
       var permission = await Geolocator.checkPermission();
@@ -409,6 +485,10 @@ class _MapPageState extends State<MapPage> {
             helpfulCount: (data['helpful_count'] as num?)?.toInt() ?? 0,
             position: point,
             distanceMeters: distance,
+            translations: (data['translations'] as Map<String, dynamic>?)
+                    ?.map((key, value) => MapEntry(key, value.toString())) ??
+                const {},
+            originalLang: data['original_lang'] as String? ?? 'ja',
           ),
         );
       }
@@ -418,7 +498,12 @@ class _MapPageState extends State<MapPage> {
     return results;
   }
 
-  Future<List<TravelPhoto>> _fetchNearbyPhotos(ll.LatLng center) async {
+  Future<List<TravelPhoto>> _fetchNearbyPhotos(
+    ll.LatLng center, {
+    required String? currentUserId,
+    required Set<String> friendIds,
+    required MapPhotoFilter filter,
+  }) async {
     final snapshot =
         await FirebaseFirestore.instance.collection('travel_photos').get();
     final results = <TravelPhoto>[];
@@ -427,16 +512,32 @@ class _MapPageState extends State<MapPage> {
       final lat = (data['latitude'] as num?)?.toDouble();
       final lng = (data['longitude'] as num?)?.toDouble();
       final imageUrl = data['imageUrl'] as String?;
-      if (lat == null || lng == null || imageUrl == null) continue;
+      final ownerId = data['userId'] as String? ?? '';
+      final visibility = data['visibility'] as String? ?? 'friends';
+      final createdAtRaw = data['createdAt'];
+      final createdAt = createdAtRaw is Timestamp
+          ? createdAtRaw.toDate()
+          : createdAtRaw as DateTime?;
+      if (lat == null || lng == null || imageUrl == null || ownerId.isEmpty)
+        continue;
       final point = ll.LatLng(lat, lng);
       final distance = distanceMeters(center, point);
-      if (distance <= nearbyRadiusMeters) {
+      final isMine = ownerId == currentUserId;
+      final isFriend = friendIds.contains(ownerId);
+      final matchesFilter = switch (filter) {
+        MapPhotoFilter.publicOnly => visibility == 'public',
+        MapPhotoFilter.friendsOnly =>
+          visibility == 'friends' && (isMine || isFriend),
+      };
+      if (distance <= nearbyRadiusMeters && matchesFilter) {
         results.add(
           TravelPhoto(
             id: doc.id,
             imageUrl: imageUrl,
             position: point,
-            userId: data['userId'] as String? ?? '',
+            userId: ownerId,
+            visibility: visibility,
+            createdAt: createdAt,
             distanceMeters: distance,
           ),
         );
@@ -444,6 +545,65 @@ class _MapPageState extends State<MapPage> {
     }
     results.sort((a, b) => a.distanceMeters.compareTo(b.distanceMeters));
     return results;
+  }
+
+  /// 登録済み店舗を全件取得する（地域コレクション連携までは、確認用に距離で
+  /// 絞り込まず全て表示する）。
+  Future<List<Store>> _fetchStores() async {
+    final snapshot =
+        await FirebaseFirestore.instance.collection('stores').get();
+    final results = <Store>[];
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      if (data['latitude'] == null || data['longitude'] == null) continue;
+      results.add(Store.fromMap(doc.id, data));
+    }
+    return results;
+  }
+
+  void _showStoreInfo(Store store) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.storefront, color: Colors.deepPurple),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    store.name,
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (store.address.isNotEmpty)
+              Row(
+                children: [
+                  const Icon(Icons.location_on_outlined, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(store.address)),
+                ],
+              ),
+            if (store.description.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(store.description),
+            ],
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
   }
 
   Color _getCategoryColor(String category) {
@@ -714,31 +874,87 @@ class _MapPageState extends State<MapPage> {
 
   Widget _mapSearch() => Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Row(
+        child: Column(
           children: [
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: .94),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: const [
-                    BoxShadow(color: Colors.black12, blurRadius: 12),
-                  ],
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: .94),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black12, blurRadius: 12),
+                      ],
+                    ),
+                    child: SearchBarWidget(
+                      showCategoryChips: false,
+                      onSearchChanged: (query, category) {
+                        setState(() {
+                          _searchKeyword = query;
+                        });
+                      },
+                    ),
+                  ),
                 ),
-                child: SearchBarWidget(
-                  showCategoryChips: false,
-                  onSearchChanged: (query, category) {
-                    setState(() {
-                      _searchKeyword = query;
-                    });
-                  },
-                ),
-              ),
+                const SizedBox(width: 8),
+                _modeToggleButton(),
+                 const SizedBox(width: 8),
+                _amenityToggleButton(),
+              ],
             ),
-            const SizedBox(width: 8),
-            _modeToggleButton(),
           ],
         ),
+      );
+
+  Widget _photoFilterToggleButtons() => AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: !_isPhotoMode
+            ? const SizedBox.shrink()
+            : Align(
+                alignment: Alignment.centerRight,
+                child: Container(
+                  key: const ValueKey('photo_filter_toggle'),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: .94),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black12, blurRadius: 12),
+                    ],
+                  ),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.end,
+                    children: [
+                      ChoiceChip(
+                        label: const Text('全体公開'),
+                        selected: _photoFilter == MapPhotoFilter.publicOnly,
+                        onSelected: (selected) {
+                          if (!selected) return;
+                          setState(
+                            () => _photoFilter = MapPhotoFilter.publicOnly,
+                          );
+                          _reloadPhotos();
+                        },
+                      ),
+                      ChoiceChip(
+                        label: const Text('友達のみ'),
+                        selected: _photoFilter == MapPhotoFilter.friendsOnly,
+                        onSelected: (selected) {
+                          if (!selected) return;
+                          setState(
+                            () => _photoFilter = MapPhotoFilter.friendsOnly,
+                          );
+                          _reloadPhotos();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
       );
 
   Widget _modeToggleButton() => Container(
@@ -763,7 +979,36 @@ class _MapPageState extends State<MapPage> {
           },
         ),
       );
-
+        Widget _amenityToggleButton() => Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: _showAmenities ? AppColors.primary : Colors.white.withValues(alpha: .94),
+          shape: BoxShape.circle,
+          boxShadow: const [
+            BoxShadow(color: Colors.black12, blurRadius: 12),
+          ],
+        ),
+        child: IconButton(
+          icon: Text(
+            '🚻',
+            style: TextStyle(
+              fontSize: 20,
+              color: _showAmenities ? Colors.white : null,
+            ),
+          ),
+          onPressed: () async {
+            setState(() => _showAmenities = !_showAmenities);
+            if (_showAmenities && _amenities.isEmpty) {
+              final amenities = await OsmAmenityService.fetchAmenities(
+                center: _currentCenter,
+              );
+              if (!mounted) return;
+              setState(() => _amenities = amenities);
+            }
+          },
+        ),
+      );
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -776,8 +1021,10 @@ class _MapPageState extends State<MapPage> {
     return AnimatedBuilder(
       animation: inventoryData,
       builder: (context, _) {
-        final markerSkin = inventoryData.getEquippedItem(GachaItemType.markerSkin);
-        final avatarSkin = inventoryData.getEquippedItem(GachaItemType.avatarSkin);
+        final markerSkin =
+            inventoryData.getEquippedItem(GachaItemType.markerSkin);
+        final avatarSkin =
+            inventoryData.getEquippedItem(GachaItemType.avatarSkin);
         final currentSkin = markerSkin ?? avatarSkin;
 
         return Scaffold(
@@ -804,7 +1051,8 @@ class _MapPageState extends State<MapPage> {
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                     userAgentPackageName: 'com.example.qoo',
                     maxZoom: 17,
                     maxNativeZoom: 17,
@@ -816,8 +1064,27 @@ class _MapPageState extends State<MapPage> {
                         width: currentSkin != null ? 48 : 24,
                         height: currentSkin != null ? 48 : 24,
                         alignment: Alignment.center,
-                        child: CurrentLocationDot(skin: currentSkin),
+                        child: _buildCurrentLocationMarker(currentSkin),
                       ),
+                      // 登録済み店舗（Tips/写真モードに関わらず常に表示）
+                      for (final store in _stores)
+                        Marker(
+                          point: ll.LatLng(store.latitude, store.longitude),
+                          width: 40,
+                          height: 40,
+                          alignment: Alignment.bottomCenter,
+                          child: GestureDetector(
+                            onTap: () => _showStoreInfo(store),
+                            child: const Icon(
+                              Icons.storefront,
+                              color: Colors.deepPurple,
+                              size: 36,
+                              shadows: [
+                                Shadow(color: Colors.black38, blurRadius: 4),
+                              ],
+                            ),
+                          ),
+                        ),
                       if (!_isPhotoMode)
                         for (final entry in groupedComments.entries)
                           if (entry.value.isNotEmpty)
@@ -861,14 +1128,52 @@ class _MapPageState extends State<MapPage> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 3),
+                                  border:
+                                      Border.all(color: Colors.white, width: 3),
                                   boxShadow: const [
-                                    BoxShadow(color: Colors.black26, blurRadius: 6),
+                                    BoxShadow(
+                                        color: Colors.black26, blurRadius: 6),
                                   ],
                                   image: DecorationImage(
-                                    image: NetworkImage(entry.value.first.imageUrl),
+                                    image: NetworkImage(
+                                        entry.value.first.imageUrl),
                                     fit: BoxFit.cover,
                                   ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      for (final hack in _localHacks)
+                        Marker(
+                          point: ll.LatLng(hack.latitude, hack.longitude),
+                          width: 80,
+                          height: 60,
+                          child: LocalHackMarker(hack: hack),
+                        ),
+                        if (_showAmenities)
+                        for (final amenity in _amenities)
+                          Marker(
+                            point: amenity.position,
+                            width: 36,
+                            height: 36,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: amenity.type == 'toilets'
+                                      ? Colors.blue
+                                      : Colors.brown,
+                                  width: 2,
+                                ),
+                                boxShadow: const [
+                                  BoxShadow(color: Colors.black26, blurRadius: 4),
+                                ],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  amenity.type == 'toilets' ? '🚻' : '🗑️',
+                                  style: const TextStyle(fontSize: 16),
                                 ),
                               ),
                             ),
@@ -877,9 +1182,7 @@ class _MapPageState extends State<MapPage> {
                   ),
                 ],
               ),
-
               _mapSearch(),
-
               Positioned(
                 top: 96,
                 left: 0,
@@ -894,12 +1197,15 @@ class _MapPageState extends State<MapPage> {
                     itemBuilder: (context, index) {
                       final cat = _categoryFilterList[index];
                       final isSelected = _selectedCategoryFilter == cat;
-                      final catColor =
-                          cat == 'All' ? AppColors.navy : _getCategoryColor(cat);
+                      final catColor = cat == 'All'
+                          ? AppColors.navy
+                          : _getCategoryColor(cat);
 
                       return ChoiceChip(
                         label: Text(
-                          cat == 'All' ? '🌐 すべて' : cat,
+                          cat == 'All'
+                              ? '🌐 ${UiTranslations.t('すべて')}'
+                              : UiTranslations.t(cat),
                           style: const TextStyle(fontSize: 16),
                         ),
                         selected: isSelected,
@@ -925,8 +1231,6 @@ class _MapPageState extends State<MapPage> {
                   ),
                 ),
               ),
-
-              // --- ジャム瓶ボタン（富士山デザイン・拡大・赤枠位置・押し込みアニメーション＆振動つき） ---
               Positioned(
                 right: 80,
                 bottom: 90,
@@ -934,8 +1238,6 @@ class _MapPageState extends State<MapPage> {
                   onTap: _showLikedTipsModal,
                 ),
               ),
-
-              // --- ズームイン・アウトボタン ---
               Positioned(
                 right: 24,
                 bottom: 165,
@@ -986,7 +1288,7 @@ class _MapPageState extends State<MapPage> {
                 backgroundColor: Colors.white,
                 foregroundColor: AppColors.textGrey,
                 onPressed: _loadEverything,
-                tooltip: '再読み込み',
+                tooltip: UiTranslations.t('再読み込み'),
                 child: const Icon(Icons.my_location),
               ),
               const SizedBox(height: 12),
@@ -1007,8 +1309,14 @@ class _MapPageState extends State<MapPage> {
                           onPosted: _handleTipPosted, // コイン加算対応
                         ),
                 icon: Icon(_isPhotoMode ? Icons.camera_alt : Icons.add_comment),
-                label: Text(_isPhotoMode ? '写真を撮る' : '現在地にTips投稿'),
+                label: Text(
+                  _isPhotoMode
+                      ? UiTranslations.t('写真を撮る')
+                      : UiTranslations.t('現在地にTips投稿'),
+                ),
               ),
+              const SizedBox(height: 12),
+              _photoFilterToggleButtons(),
             ],
           ),
         );
@@ -1016,7 +1324,7 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-  Future<void> _handleTakePhoto() async {
+  Future<void> _handleTakePhoto(String visibility) async {
     final picker = ImagePicker();
     final XFile? photo = await picker.pickImage(source: ImageSource.camera);
     if (photo == null) return;
@@ -1030,6 +1338,7 @@ class _MapPageState extends State<MapPage> {
       bytes: await photo.readAsBytes(),
       filename: photo.name,
       position: _currentCenter,
+      visibility: visibility,
     );
 
     if (!mounted) return;
@@ -1047,8 +1356,12 @@ class _MapPageState extends State<MapPage> {
 
   Future<void> _reloadPhotos() async {
     try {
-      final photos = await _fetchNearbyPhotos(_currentCenter)
-          .timeout(const Duration(milliseconds: 2500), onTimeout: () => []);
+      final photos = await _fetchNearbyPhotos(
+        _currentCenter,
+        currentUserId: AuthService.instance.uid,
+        friendIds: _currentProfile?.friends.toSet() ?? const {},
+        filter: _photoFilter,
+      ).timeout(const Duration(milliseconds: 2500), onTimeout: () => []);
       if (!mounted) return;
       setState(() {
         _nearbyPhotos = photos;
@@ -1058,7 +1371,7 @@ class _MapPageState extends State<MapPage> {
     }
   }
 
-  Future<void> _handlePickFromGallery() async {
+  Future<void> _handlePickFromGallery(String visibility) async {
     final picker = ImagePicker();
     final XFile? photo = await picker.pickImage(source: ImageSource.gallery);
     if (photo == null) return;
@@ -1072,6 +1385,7 @@ class _MapPageState extends State<MapPage> {
       bytes: await photo.readAsBytes(),
       filename: photo.name,
       position: _currentCenter,
+      visibility: visibility,
     );
 
     if (!mounted) return;
