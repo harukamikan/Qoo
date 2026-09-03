@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../services/auth_service.dart';
+import '../services/ui_translations.dart';
 import 'gacha/gacha_item.dart';
 import 'map_screen.dart';
 import 'gacha/gacha_screen.dart';
@@ -16,6 +17,7 @@ import '../services/user_repository.dart';
 import '../models/user_profile.dart';
 import '../widgets/location_picker_sheet.dart';
 import 'saved/saved_places_screen.dart';
+import 'profile/language_region_screen.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -52,31 +54,31 @@ class _HomeShellState extends State<HomeShell> {
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.textGrey,
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.map),
-            activeIcon: Icon(Icons.map_rounded),
-            label: '地図',
+            icon: const Icon(Icons.map),
+            activeIcon: const Icon(Icons.map_rounded),
+            label: UiTranslations.t('地図'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.casino_outlined),
-            activeIcon: Icon(Icons.casino),
-            label: 'ガチャ',
+            icon: const Icon(Icons.casino_outlined),
+            activeIcon: const Icon(Icons.casino),
+            label: UiTranslations.t('ガチャ'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.rate_review_outlined),
-            activeIcon: Icon(Icons.rate_review),
-            label: '口コミ',
+            icon: const Icon(Icons.rate_review_outlined),
+            activeIcon: const Icon(Icons.rate_review),
+            label: UiTranslations.t('口コミ'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.bookmark_border),
-            activeIcon: Icon(Icons.bookmark),
-            label: '保存',
+            icon: const Icon(Icons.bookmark_border),
+            activeIcon: const Icon(Icons.bookmark),
+            label: UiTranslations.t('保存'),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'プロフィール',
+            icon: const Icon(Icons.person_outline),
+            activeIcon: const Icon(Icons.person),
+            label: UiTranslations.t('プロフィール'),
           ),
         ],
       ),
@@ -143,6 +145,7 @@ class SearchPage extends StatelessWidget {
     );
   }
 }
+
 class PostSelectionPage extends StatefulWidget {
   const PostSelectionPage({super.key});
 
@@ -196,7 +199,8 @@ class _PostSelectionPageState extends State<PostSelectionPage> {
                       context,
                       onTakePhoto: () async {
                         final picker = ImagePicker();
-                        final photo = await picker.pickImage(source: ImageSource.camera);
+                        final photo =
+                            await picker.pickImage(source: ImageSource.camera);
                         if (photo == null) return;
                         if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -209,12 +213,16 @@ class _PostSelectionPageState extends State<PostSelectionPage> {
                         );
                         if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(result != null ? '写真を投稿しました' : 'アップロードに失敗しました')),
+                          SnackBar(
+                              content: Text(result != null
+                                  ? '写真を投稿しました'
+                                  : 'アップロードに失敗しました')),
                         );
                       },
                       onPickFromGallery: () async {
                         final picker = ImagePicker();
-                        final photo = await picker.pickImage(source: ImageSource.gallery);
+                        final photo =
+                            await picker.pickImage(source: ImageSource.gallery);
                         if (photo == null) return;
                         if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -227,7 +235,10 @@ class _PostSelectionPageState extends State<PostSelectionPage> {
                         );
                         if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(result != null ? '写真を投稿しました' : 'アップロードに失敗しました')),
+                          SnackBar(
+                              content: Text(result != null
+                                  ? '写真を投稿しました'
+                                  : 'アップロードに失敗しました')),
                         );
                       },
                     );
@@ -322,9 +333,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
       padding: const EdgeInsets.all(24),
       children: [
         const PageHeader('口コミを作成'),
-
         const SizedBox(height: 34),
-
         const Text(
           'カテゴリー',
           style: TextStyle(
@@ -332,9 +341,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
             color: AppColors.navy,
           ),
         ),
-
         const SizedBox(height: 14),
-
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -345,9 +352,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
                   selected: category == x,
                   selectedColor: AppColors.primary,
                   labelStyle: TextStyle(
-                    color: category == x
-                        ? Colors.white
-                        : AppColors.textGrey,
+                    color: category == x ? Colors.white : AppColors.textGrey,
                   ),
                   onSelected: (_) {
                     setState(() {
@@ -358,9 +363,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
               )
               .toList(),
         ),
-
         const SizedBox(height: 34),
-
         const Text(
           'あなたの口コミ',
           style: TextStyle(
@@ -368,9 +371,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
             color: AppColors.navy,
           ),
         ),
-
         const SizedBox(height: 12),
-
         TextField(
           controller: controller,
           maxLength: 500,
@@ -382,9 +383,7 @@ class _ReviewFormPageState extends State<ReviewFormPage> {
             ),
           ),
         ),
-
         const SizedBox(height: 30),
-
         FilledButton.icon(
           onPressed: () {
             final coinData = CoinDataProvider.of(context);
@@ -433,7 +432,7 @@ class SavedPage extends StatelessWidget {
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
-   @override
+  @override
   Widget build(BuildContext context) {
     final user = AuthService.instance.currentUser;
     // ★重要
@@ -475,14 +474,12 @@ class ProfilePage extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.white,
-
                       border: Border.all(
                         color: frame != null
                             ? frame.rarity.color
                             : AppColors.primary,
                         width: frame != null ? 4 : 2,
                       ),
-
                       boxShadow: frame != null
                           ? [
                               BoxShadow(
@@ -492,7 +489,6 @@ class ProfilePage extends StatelessWidget {
                             ]
                           : null,
                     ),
-
                     child: Center(
                       child: Text(
                         avatar?.iconOrAsset ?? '🙂',
@@ -508,7 +504,6 @@ class ProfilePage extends StatelessWidget {
                   // ------------------------------------------
                   if (frame != null) ...[
                     const SizedBox(height: 8),
-
                     Text(
                       frame.name,
                       style: TextStyle(
@@ -523,7 +518,6 @@ class ProfilePage extends StatelessWidget {
                   // ------------------------------------------
                   if (badge != null) ...[
                     const SizedBox(height: 8),
-
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -551,26 +545,28 @@ class ProfilePage extends StatelessWidget {
                   // ログイン中のユーザー情報
                   // ------------------------------------------
                   if (user != null) ...[
-  const SizedBox(height: 16),
-  FutureBuilder<UserProfile?>(
-    future: UserRepository.instance.fetchProfile(user.uid),
-    builder: (context, snap) {
-      final name = snap.data?.name ?? user.displayName ?? '名前未設定';
-      return Column(
-        children: [
-          Text(
-            name,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          Text(
-            user.email ?? '',
-            style: const TextStyle(color: AppColors.textGrey),
-          ),
-        ],
-      );
-    },
-  ),
-],
+                    const SizedBox(height: 16),
+                    FutureBuilder<UserProfile?>(
+                      future: UserRepository.instance.fetchProfile(user.uid),
+                      builder: (context, snap) {
+                        final name =
+                            snap.data?.name ?? user.displayName ?? '名前未設定';
+                        return Column(
+                          children: [
+                            Text(
+                              name,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              user.email ?? '',
+                              style: const TextStyle(color: AppColors.textGrey),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -591,6 +587,31 @@ class ProfilePage extends StatelessWidget {
               },
               icon: const Icon(Icons.style),
               label: const Text('コレクションを見る'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(52),
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // ------------------------------------------
+            // 言語と地域
+            // ------------------------------------------
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const LanguageRegionScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.language),
+              label: const Text('言語と地域'),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(52),
                 foregroundColor: AppColors.primary,

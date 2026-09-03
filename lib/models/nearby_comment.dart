@@ -11,6 +11,8 @@ class NearbyComment {
   int helpfulCount;
   final ll.LatLng position;
   final double distanceMeters;
+  final Map<String, String> translations;
+  final String originalLang;
 
   NearbyComment({
     required this.id,
@@ -22,5 +24,13 @@ class NearbyComment {
     required this.helpfulCount,
     required this.position,
     required this.distanceMeters,
+    this.translations = const {},
+    this.originalLang = 'ja',
   });
+
+  /// 指定した言語での表示テキストを返す。
+  /// translationsに該当言語が無ければ、原文（content）にフォールバックする。
+  String contentFor(String langCode) {
+    return translations[langCode] ?? content;
+  }
 }
