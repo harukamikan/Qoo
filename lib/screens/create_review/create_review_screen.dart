@@ -154,10 +154,14 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
     // 位置が既存スポットに紐づいていない場合は、新規スポットとして
     // 検索・保存できるよう最も近いカテゴリーのプレースホルダーIDを使う。
     final placeId = _boundPlaceId ?? _fallbackPlaceIdForCategory();
+    final reviewId = 'r_${DateTime.now().millisecondsSinceEpoch}';
 
     final review = Review(
-      id: 'r_${DateTime.now().millisecondsSinceEpoch}',
+      id: reviewId,
+      commentId: reviewId, // 必須引数追加
       placeId: placeId,
+      spotName: _locationLabel, // 必須引数追加
+      userId: 'me', // 必須引数追加
       userName: 'あなた',
       userTag: 'JP',
       avatarColor: 0xFFE8552E,
