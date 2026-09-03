@@ -25,6 +25,9 @@ import '../widgets/photo_capture_sheet.dart';
 import '../screens/gacha/coin_manager.dart';
 import '../screens/gacha/inventory_manager.dart';
 import '../screens/gacha/gacha_item.dart';
+import '../models/local_hack.dart';
+import '../widgets/local_hack_marker.dart';
+import '../services/local_hack_service.dart';
 
 /// 現在地からこの半径（メートル）以内の投稿だけを表示する。
 const double nearbyRadiusMeters = 1000;
@@ -50,6 +53,7 @@ class _MapPageState extends State<MapPage> {
   final MapController _mapController = MapController();
   ll.LatLng _currentCenter = fukuokaFallback;
   List<NearbyComment> _nearbyComments = [];
+  List<LocalHack> _localHacks = [];
   List<TravelPhoto> _nearbyPhotos = [];
   bool _isLoading = true;
   final _alertService = NearbyAlertService();
@@ -138,6 +142,7 @@ class _MapPageState extends State<MapPage> {
     _loadMyHelpfulIds();
     _startCarouselTimer();
     _alertService.start();
+    _localHacks = LocalHackService.initialHacks;
   }
 
   void _startCarouselTimer() {
@@ -626,6 +631,13 @@ class _MapPageState extends State<MapPage> {
                               ),
                             ),
                           ),
+                          for (final hack in _localHacks)
+                        Marker(
+                          point: ll.LatLng(hack.latitude, hack.longitude),
+                          width: 80,
+                          height: 60,
+                          child: LocalHackMarker(hack: hack),
+                        ),
                     ],
                   ),
                 ],
