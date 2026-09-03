@@ -98,7 +98,7 @@ class _JamJarButtonState extends State<JamJarButton> {
             ],
           ),
           child: Image.asset(
-            'assets/images/fuji_jam_jar.png',
+            'assets/images/MtFuji.png',
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) {
               return Container(
