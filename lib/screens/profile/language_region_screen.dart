@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../state/app_data.dart';
 import '../../theme/app_colors.dart';
+import '../../services/ui_translations.dart';
 
 /// プロフィール画面の「言語と地域」から遷移する設定画面。
 class LanguageRegionScreen extends StatefulWidget {
@@ -42,14 +43,15 @@ class _LanguageRegionScreenState extends State<LanguageRegionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('言語と地域')),
+      appBar: AppBar(title: Text(UiTranslations.t('言語と地域'))),
       body: SafeArea(
         top: false,
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            const Text('表示言語',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+            Text(UiTranslations.t('表示言語'),
+                style:
+                    const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
             const SizedBox(height: 10),
             ..._languages.map(
               (lang) => RadioListTile<String>(
@@ -62,8 +64,9 @@ class _LanguageRegionScreenState extends State<LanguageRegionScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text('地域',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+            Text(UiTranslations.t('地域'),
+                style:
+                    const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
             const SizedBox(height: 10),
             ..._regions.map(
               (reg) => RadioListTile<String>(
@@ -80,11 +83,11 @@ class _LanguageRegionScreenState extends State<LanguageRegionScreen> {
               onPressed: () {
                 AppData.instance.setLanguageRegion(_language, _region);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('言語と地域を更新しました')),
+                  SnackBar(content: Text(UiTranslations.t('言語と地域を更新しました'))),
                 );
                 Navigator.of(context).pop();
               },
-              child: const Text('保存'),
+              child: Text(UiTranslations.t('保存')),
             ),
           ],
         ),
