@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../models/user_role.dart';
+
 /// Firebase Authentication と Google Sign-In をまとめて扱うサービス。
 ///
 /// 認証方式は「Googleアカウントでのサインインのみ」。メール/パスワードは使わない。
@@ -24,6 +26,16 @@ class AuthService {
   final ValueNotifier<int> refresh = ValueNotifier<int>(0);
 
   void notifyProfileChanged() => refresh.value++;
+
+  /// ログイン前の役割選択（観光客 / 店舗）。[RoleSelectScreen] で設定し、
+  /// [AuthGate] がログイン後にどちらのプロフィールを見るかの判定に使う。
+  /// アプリ内メモリのみに保持する一時的な状態（再起動やサインアウトでリセットされる）。
+  UserRole? pendingRole;
+
+  void chooseRole(UserRole role) {
+    pendingRole = role;
+    notifyProfileChanged();
+  }
 
   /// アプリ起動時に一度だけ呼ぶ。GoogleSignIn v7 は initialize() が必須。
   Future<void> ensureInitialized() async {
@@ -74,5 +86,6 @@ class AuthService {
       debugPrint('GoogleSignIn.signOut failed: $e');
     }
     await _auth.signOut();
+    pendingRole = null; // 次回ログイン時にまた役割選択から始める
   }
 }

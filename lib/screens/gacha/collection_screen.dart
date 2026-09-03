@@ -81,6 +81,36 @@ class CollectionScreen extends StatelessWidget {
     );
   }
 
+  /// アイテムの画像 / 絵文字を描画するヘルパー
+  Widget _buildItemIcon(GachaItem item, {double size = 28}) {
+    final isAsset = item.isAssetImage ||
+        item.iconOrAsset.startsWith('assets/') ||
+        item.iconOrAsset.endsWith('.png') ||
+        item.iconOrAsset.endsWith('.jpg') ||
+        item.iconOrAsset.endsWith('.jpeg');
+
+    if (isAsset) {
+      return Image.asset(
+        item.iconOrAsset,
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          return Icon(
+            Icons.image_not_supported_outlined,
+            size: size * 0.7,
+            color: Colors.grey,
+          );
+        },
+      );
+    }
+
+    return Text(
+      item.iconOrAsset,
+      style: TextStyle(fontSize: size * 0.8),
+    );
+  }
+
   Widget _buildItemCard(
     InventoryData inventoryData,
     GachaItem item,
@@ -122,7 +152,13 @@ class CollectionScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Text(item.iconOrAsset, style: const TextStyle(fontSize: 26)),
+            SizedBox(
+              width: 32,
+              height: 32,
+              child: Center(
+                child: _buildItemIcon(item, size: 32),
+              ),
+            ),
             const SizedBox(height: 2),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),

@@ -12,8 +12,22 @@ class LanguageRegionScreen extends StatefulWidget {
 }
 
 class _LanguageRegionScreenState extends State<LanguageRegionScreen> {
-  static const _languages = ['日本語', 'English', '中文', '한국어'];
-  static const _regions = ['日本', 'アメリカ', '台湾', '韓国'];
+  static const _languages = [
+    '日本語',
+    'English',
+    '한국어',
+    '繁體中文',
+    '简体中文',
+    'ไทย',
+  ];
+  static const _regions = [
+    '日本',
+    'アメリカ',
+    '韓国',
+    '台湾',
+    '中国',
+    'タイ',
+  ];
 
   late String _language;
   late String _region;

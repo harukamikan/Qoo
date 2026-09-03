@@ -16,3 +16,4 @@ android/app/release/
 ios/Pods/
 ios/.symlinks/
 .firebase/
+.env

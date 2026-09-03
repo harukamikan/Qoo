@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart' as ll;
 import '../models/nearby_comment.dart';
 import '../theme/app_colors.dart';
+import '../state/app_data.dart';
+import '../services/translation_service.dart';
 import 'post_tips_dialog.dart';
 import 'report_dialog.dart';
 
@@ -257,7 +259,11 @@ void showLocationTipsModal(
                                 ),
                                 const SizedBox(height: 10),
                                 Text(
-                                  c.content,
+                                  c.contentFor(
+                                    TranslationService.toLanguageCode(
+                                      AppData.instance.language,
+                                    ),
+                                  ),
                                   style: const TextStyle(
                                     fontSize: 14,
                                     color: Colors.black87,

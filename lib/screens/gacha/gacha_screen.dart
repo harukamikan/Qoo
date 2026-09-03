@@ -6,6 +6,7 @@ import 'coin_manager.dart';
 import 'gacha_service.dart';
 import 'inventory_manager.dart';
 import 'collection_screen.dart';
+import '../../services/ui_translations.dart';
 
 /// 和風演出テーマ
 enum CustomGachaTheme {
@@ -56,8 +57,7 @@ class _GachaScreenState extends State<GachaScreen> {
       final item = GachaService.drawGacha();
 
       debugPrint(
-        'GACHA RESULT: id=${item.id}, name=${item.name}, type=${item.type}'
-      );
+          'GACHA RESULT: id=${item.id}, name=${item.name}, type=${item.type}');
 
       results.add(item);
       // 獲得アイテムを所持データへ反映＆永続化（バックグラウンドで保存）
@@ -94,10 +94,13 @@ class _GachaScreenState extends State<GachaScreen> {
   void _addCoins(CoinData coinData) {
     coinData.addCoins(1000);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('1000コインを獲得しました！', style: TextStyle(color: Colors.white)),
-        backgroundColor: Color(0xFFC2185B),
-        duration: Duration(seconds: 1),
+      SnackBar(
+        content: Text(
+          UiTranslations.t('1000コインを獲得しました！'),
+          style: const TextStyle(color: Colors.white),
+        ),
+        backgroundColor: const Color(0xFFC2185B),
+        duration: const Duration(seconds: 1),
       ),
     );
   }
@@ -111,15 +114,22 @@ class _GachaScreenState extends State<GachaScreen> {
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: Color(0xFFE91E63), width: 1.5),
         ),
-        title: const Text('コイン不足',
-            style: TextStyle(
-                color: Color(0xFF4A1525), fontWeight: FontWeight.bold)),
-        content: const Text('ガチャを引くためのコインが不足しています。',
-            style: TextStyle(color: Color(0xFF6B2D3E))),
+        title: Text(
+          UiTranslations.t('コイン不足'),
+          style: const TextStyle(
+              color: Color(0xFF4A1525), fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          UiTranslations.t('ガチャを引くためのコインが不足しています。'),
+          style: const TextStyle(color: Color(0xFF6B2D3E)),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('閉じる', style: TextStyle(color: Color(0xFF880E4F))),
+            child: Text(
+              UiTranslations.t('閉じる'),
+              style: const TextStyle(color: Color(0xFF880E4F)),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -130,7 +140,7 @@ class _GachaScreenState extends State<GachaScreen> {
               Navigator.pop(context);
               _addCoins(coinData);
             },
-            child: const Text('コイン補充'),
+            child: Text(UiTranslations.t('コイン補充')),
           ),
         ],
       ),
@@ -174,8 +184,8 @@ class _GachaScreenState extends State<GachaScreen> {
                   const SizedBox(height: 16),
                   // コイン保有数表示ヘッダー
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.9),
                       borderRadius: BorderRadius.circular(20),
@@ -218,18 +228,20 @@ class _GachaScreenState extends State<GachaScreen> {
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFFE91E63).withOpacity(0.3),
+                                  color:
+                                      const Color(0xFFE91E63).withOpacity(0.3),
                                   blurRadius: 4,
                                   offset: const Offset(0, 2),
                                 ),
                               ],
                             ),
-                            child: const Row(
+                            child: Row(
                               children: [
-                                Icon(Icons.add, size: 16, color: Colors.white),
+                                const Icon(Icons.add,
+                                    size: 16, color: Colors.white),
                                 Text(
-                                  '補充',
-                                  style: TextStyle(
+                                  UiTranslations.t('補充'),
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
@@ -255,9 +267,9 @@ class _GachaScreenState extends State<GachaScreen> {
                       border: Border.all(
                           color: const Color(0xFFC2185B).withOpacity(0.3)),
                     ),
-                    child: const Text(
-                      '🌸 ガチャ 🌸',
-                      style: TextStyle(
+                    child: Text(
+                      '🌸 ${UiTranslations.t('ガチャ')} 🌸',
+                      style: const TextStyle(
                         color: Color(0xFF880E4F),
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -267,7 +279,7 @@ class _GachaScreenState extends State<GachaScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '最高レアリティに応じて演出が豪華に昇格！\n【${_buildProbabilityText()}】',
+                    '${UiTranslations.t('レアリティに応じて演出が変化！')}\n【${_buildProbabilityText()}】',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: const Color(0xFF4A1525).withOpacity(0.8),
@@ -283,22 +295,23 @@ class _GachaScreenState extends State<GachaScreen> {
                     children: [
                       Expanded(
                         child: _buildJapaneseGachaButton(
-                          title: '1回ガチャ',
-                          subtitle: '100 コイン',
+                          title: UiTranslations.t('1回ガチャ'),
+                          subtitle: '100 ${UiTranslations.t('コイン')}',
                           baseColors: [
                             const Color(0xFF4A2E35),
                             const Color(0xFF2C1820)
                           ],
                           accentColor: const Color(0xFFFFB7C5),
                           seed: 101,
-                          onTap: () => _pullGacha(coinData, inventoryData, 1, 100),
+                          onTap: () =>
+                              _pullGacha(coinData, inventoryData, 1, 100),
                         ),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
                         child: _buildJapaneseGachaButton(
-                          title: '10連ガチャ',
-                          subtitle: '1000 コイン',
+                          title: UiTranslations.t('10連ガチャ'),
+                          subtitle: '1000 ${UiTranslations.t('コイン')}',
                           baseColors: [
                             const Color(0xFFAD1457),
                             const Color(0xFF6A1B4D)
@@ -317,13 +330,15 @@ class _GachaScreenState extends State<GachaScreen> {
                   TextButton.icon(
                     onPressed: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const CollectionScreen()),
+                      MaterialPageRoute(
+                          builder: (_) => const CollectionScreen()),
                     ),
                     icon: const Icon(Icons.style, color: Color(0xFF880E4F)),
-                    label: const Text(
-                      'コレクションを見る',
-                      style: TextStyle(
-                          color: Color(0xFF880E4F), fontWeight: FontWeight.bold),
+                    label: Text(
+                      UiTranslations.t('コレクションを見る'),
+                      style: const TextStyle(
+                          color: Color(0xFF880E4F),
+                          fontWeight: FontWeight.bold),
                     ),
                   ),
 
@@ -556,8 +571,8 @@ class _JapaneseButtonPainter extends CustomPainter {
     final innerBorderPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.6
-      ..color = (isSpecial ? const Color(0xFFFFD700) : accentColor)
-          .withOpacity(0.35);
+      ..color =
+          (isSpecial ? const Color(0xFFFFD700) : accentColor).withOpacity(0.35);
 
     canvas.drawRRect(innerRRect, innerBorderPaint);
   }
@@ -640,6 +655,30 @@ class _MasterGachaOverlayState extends State<MasterGachaOverlay>
         (rand.nextDouble() - 0.5) * intensity);
   }
 
+  /// アイテムのビジュアルを表示する。
+  /// iconOrAsset が画像アセットのパス（"assets/" で始まる）なら Image.asset で描画し、
+  /// それ以外（絵文字文字列）なら従来通り Text で描画する。
+  /// これにより PNG 画像がテキストとしてそのまま表示されてしまう不具合を修正している。
+  Widget _buildItemVisual(GachaItem item, double size) {
+    if (item.isAssetImage) {
+      return Image.asset(
+        item.iconOrAsset,
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          // pubspec.yaml への登録漏れ等でアセットが読み込めない場合のフォールバック
+          return Icon(
+            Icons.image_not_supported_outlined,
+            size: size * 0.7,
+            color: Colors.grey,
+          );
+        },
+      );
+    }
+    return Text(item.iconOrAsset, style: TextStyle(fontSize: size));
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -674,21 +713,20 @@ class _MasterGachaOverlayState extends State<MasterGachaOverlay>
                       child: IgnorePointer(
                         child: Container(
                           color: _getThemeColor().withOpacity(
-                            (sin(_flashAnim.value * pi) * 0.95)
-                                .clamp(0.0, 1.0),
+                            (sin(_flashAnim.value * pi) * 0.95).clamp(0.0, 1.0),
                           ),
                         ),
                       ),
                     ),
                   if (!_showResult)
-                    const Positioned(
+                    Positioned(
                       bottom: 40,
                       left: 0,
                       right: 0,
                       child: Text(
-                        '画面タップでスキップ',
+                        UiTranslations.t('画面タップでスキップ'),
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 13,
                             letterSpacing: 1.5),
@@ -718,13 +756,13 @@ class _MasterGachaOverlayState extends State<MasterGachaOverlay>
     switch (widget.theme) {
       case CustomGachaTheme.sakuraShrine:
         return _buildStageContent(
-            '⛩️', '〜 桜吹雪・通常引き 〜', const Color(0xFFFFB7C5));
+            '⛩️', UiTranslations.t('〜 桜吹雪・通常引き 〜'), const Color(0xFFFFB7C5));
       case CustomGachaTheme.samuraiSlash:
         return _buildStageContent(
-            '⚔️', '〜 秘伝一閃・SR昇格 〜', const Color(0xFFE53935));
+            '⚔️', UiTranslations.t('〜 秘伝一閃・SR昇格 〜'), const Color(0xFFE53935));
       case CustomGachaTheme.hanabiFestival:
-        return _buildStageContent(
-            '🎆', '〜 大輪極彩・SSR/UR確定 〜', const Color(0xFFFFD54F));
+        return _buildStageContent('🎆', UiTranslations.t('〜 大輪極彩・SSR/UR確定 〜'),
+            const Color(0xFFFFD54F));
     }
   }
 
@@ -746,8 +784,8 @@ class _MasterGachaOverlayState extends State<MasterGachaOverlay>
                 BoxShadow(color: color.withOpacity(0.7), blurRadius: 40)
               ],
             ),
-            child: Center(
-                child: Text(icon, style: const TextStyle(fontSize: 72))),
+            child:
+                Center(child: Text(icon, style: const TextStyle(fontSize: 72))),
           ),
         ),
         const SizedBox(height: 32),
@@ -781,9 +819,9 @@ class _MasterGachaOverlayState extends State<MasterGachaOverlay>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            '獲得結果',
-            style: TextStyle(
+          Text(
+            UiTranslations.t('獲得結果'),
+            style: const TextStyle(
                 color: Color(0xFF4A1525),
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -820,8 +858,11 @@ class _MasterGachaOverlayState extends State<MasterGachaOverlay>
                     borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () => Navigator.pop(context),
-              child: const Text('獲得する',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              child: Text(
+                UiTranslations.t('獲得する'),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
             ),
           )
         ],
@@ -845,7 +886,11 @@ class _MasterGachaOverlayState extends State<MasterGachaOverlay>
           ),
         ),
         const SizedBox(height: 16),
-        Text(item.iconOrAsset, style: const TextStyle(fontSize: 64)),
+        SizedBox(
+          width: 64,
+          height: 64,
+          child: _buildItemVisual(item, 64),
+        ),
         const SizedBox(height: 12),
         Text(
           item.name,
@@ -904,10 +949,7 @@ class _MasterGachaOverlayState extends State<MasterGachaOverlay>
                 BoxShadow(
                     color: item.rarity.color.withOpacity(0.6), blurRadius: 8)
               ]
-            : [
-                BoxShadow(
-                    color: Colors.black.withOpacity(0.05), blurRadius: 4)
-              ],
+            : [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -926,7 +968,11 @@ class _MasterGachaOverlayState extends State<MasterGachaOverlay>
             ),
           ),
           const SizedBox(height: 4),
-          Text(item.iconOrAsset, style: const TextStyle(fontSize: 24)),
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: _buildItemVisual(item, 24),
+          ),
           const SizedBox(height: 2),
           Icon(item.type.icon, size: 10, color: const Color(0xFF6A1B4D)),
           const SizedBox(height: 1),
@@ -1008,8 +1054,7 @@ class _JapaneseGachaPainter extends CustomPainter {
 
     for (int i = 0; i < particleCount; i++) {
       final angle = (pi * 2 / particleCount) * i;
-      final pCenter =
-          center + Offset(cos(angle) * radius, sin(angle) * radius);
+      final pCenter = center + Offset(cos(angle) * radius, sin(angle) * radius);
 
       final paint = Paint()
         ..color = HSLColor.fromAHSL(
