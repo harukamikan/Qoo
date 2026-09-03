@@ -279,7 +279,7 @@ class _GachaScreenState extends State<GachaScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '${UiTranslations.t('最高レアリティに応じて演出が豪華に昇格！')}\n【${_buildProbabilityText()}】',
+                    '${UiTranslations.t('レアリティに応じて演出が変化！')}\n【${_buildProbabilityText()}】',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: const Color(0xFF4A1525).withOpacity(0.8),
@@ -655,6 +655,30 @@ class _MasterGachaOverlayState extends State<MasterGachaOverlay>
         (rand.nextDouble() - 0.5) * intensity);
   }
 
+  /// アイテムのビジュアルを表示する。
+  /// iconOrAsset が画像アセットのパス（"assets/" で始まる）なら Image.asset で描画し、
+  /// それ以外（絵文字文字列）なら従来通り Text で描画する。
+  /// これにより PNG 画像がテキストとしてそのまま表示されてしまう不具合を修正している。
+  Widget _buildItemVisual(GachaItem item, double size) {
+    if (item.isAssetImage) {
+      return Image.asset(
+        item.iconOrAsset,
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          // pubspec.yaml への登録漏れ等でアセットが読み込めない場合のフォールバック
+          return Icon(
+            Icons.image_not_supported_outlined,
+            size: size * 0.7,
+            color: Colors.grey,
+          );
+        },
+      );
+    }
+    return Text(item.iconOrAsset, style: TextStyle(fontSize: size));
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -862,7 +886,11 @@ class _MasterGachaOverlayState extends State<MasterGachaOverlay>
           ),
         ),
         const SizedBox(height: 16),
-        Text(item.iconOrAsset, style: const TextStyle(fontSize: 64)),
+        SizedBox(
+          width: 64,
+          height: 64,
+          child: _buildItemVisual(item, 64),
+        ),
         const SizedBox(height: 12),
         Text(
           item.name,
@@ -940,7 +968,11 @@ class _MasterGachaOverlayState extends State<MasterGachaOverlay>
             ),
           ),
           const SizedBox(height: 4),
-          Text(item.iconOrAsset, style: const TextStyle(fontSize: 24)),
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: _buildItemVisual(item, 24),
+          ),
           const SizedBox(height: 2),
           Icon(item.type.icon, size: 10, color: const Color(0xFF6A1B4D)),
           const SizedBox(height: 1),

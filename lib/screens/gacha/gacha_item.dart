@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 enum GachaItemType {
   markerSkin,   // マーカー用スキン（ラーメンピン等）
   avatarSkin,   // ご当地アバター
-  profileFrame, // プロフィールフレーム
-  badge,        // 限定バッジ
+  // profileFrame, // プロフィールフレーム
+  // badge,        // 限定バッジ
 }
 
 /// 種別ごとの表示用ラベル・アイコン
@@ -16,10 +16,10 @@ extension GachaItemTypeExtension on GachaItemType {
         return 'マーカースキン';
       case GachaItemType.avatarSkin:
         return 'アバタースキン';
-      case GachaItemType.profileFrame:
-        return 'プロフィールフレーム';
-      case GachaItemType.badge:
-        return 'バッジ';
+      // case GachaItemType.profileFrame:
+      //   return 'プロフィールフレーム';
+      // case GachaItemType.badge:
+      //   return 'バッジ';
     }
   }
 
@@ -30,10 +30,10 @@ extension GachaItemTypeExtension on GachaItemType {
         return Icons.location_on;
       case GachaItemType.avatarSkin:
         return Icons.face_retouching_natural;
-      case GachaItemType.profileFrame:
-        return Icons.crop_square;
-      case GachaItemType.badge:
-        return Icons.military_tech;
+      // case GachaItemType.profileFrame:
+      //   return Icons.crop_square;
+      // case GachaItemType.badge:
+      //   return Icons.military_tech;
     }
   }
 }
@@ -72,6 +72,11 @@ class GachaItem {
     required this.iconOrAsset,
     this.regionName,
   });
+
+  /// iconOrAsset が画像アセットのパスかどうか（絵文字文字列と区別するため）
+  /// 現状は "assets/" プレフィックスの有無で判定している。
+  /// アセットの配置ルールが変わる場合はここだけ直せばよい。
+  bool get isAssetImage => iconOrAsset.startsWith('assets/');
 
   Map<String, dynamic> toJson() => {
     'id': id,

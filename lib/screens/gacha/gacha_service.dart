@@ -9,15 +9,15 @@ class GachaService {
   /// ガチャの排出ラインナップ（マスターデータ）
   static final List<GachaItem> masterItemList = [
     // --- UR (超激レア) ---
-    const GachaItem(
-      id: 'frame_hakata_master',
-      name: '博多マスターフレーム',
-      description: '博多の街を極めし者に贈られる黄金のラーメン装飾枠！',
-      type: GachaItemType.profileFrame,
-      rarity: Rarity.UR,
-      iconOrAsset: '🍜',
-      regionName: '博多',
-    ),
+    // const GachaItem(
+    //   id: 'frame_hakata_master',
+    //   name: '博多マスターフレーム',
+    //   description: '博多の街を極めし者に贈られる黄金のラーメン装飾枠！',
+    //   // type: GachaItemType.profileFrame,
+    //   rarity: Rarity.UR,
+    //   iconOrAsset: '🍜',
+    //   regionName: '博多',
+    // ),
 
     // --- SSR (激レア) ---
     const GachaItem(
@@ -40,15 +40,15 @@ class GachaService {
     ),
 
     // --- SR (レア) ---
-    const GachaItem(
-      id: 'badge_onsen_bugyo',
-      name: '温泉奉行バッジ',
-      description: '温泉地のTipsに詳しいことを証明するコレクターズバッジ。',
-      type: GachaItemType.badge,
-      rarity: Rarity.SR,
-      iconOrAsset: '♨️',
-      regionName: '全国',
-    ),
+    // const GachaItem(
+    //   id: 'badge_onsen_bugyo',
+    //   name: '温泉奉行バッジ',
+    //   description: '温泉地のTipsに詳しいことを証明するコレクターズバッジ。',
+    //   type: GachaItemType.badge,
+    //   rarity: Rarity.SR,
+    //   iconOrAsset: '♨️',
+    //   regionName: '全国',
+    // ),
     const GachaItem(
       id: 'skin_onsen_bubble',
       name: '湯けむり吹き出しスキン',
@@ -60,14 +60,14 @@ class GachaService {
     ),
 
     // --- R (レア寄りノーマル) ---
-    const GachaItem(
-      id: 'badge_first_step',
-      name: 'ビギナー旅人バッジ',
-      description: '旅の第一歩を踏み出した証。',
-      type: GachaItemType.badge,
-      rarity: Rarity.R,
-      iconOrAsset: '🧳',
-    ),
+    // const GachaItem(
+    //   id: 'badge_first_step',
+    //   name: 'ビギナー旅人バッジ',
+    //   description: '旅の第一歩を踏み出した証。',
+    //   type: GachaItemType.badge,
+    //   rarity: Rarity.R,
+    //   iconOrAsset: '🧳',
+    // ),
     const GachaItem(
       id: 'avatar_yuru_chara',
       name: 'ご当地ゆるキャラアバター',
@@ -78,15 +78,36 @@ class GachaService {
       regionName: '全国',
     ),
 
-    // --- N (ノーマル) ---
+    // --- アバタースキン（新規追加） ---
     const GachaItem(
-      id: 'frame_simple_wood',
-      name: 'ウッドフレーム',
-      description: 'ナチュラルな木目調のプロフィール枠。',
-      type: GachaItemType.profileFrame,
-      rarity: Rarity.N,
-      iconOrAsset: '🪵',
+      id: 'avatar_kappa_jar',
+      name: '河童瓶アバター',
+      description: 'キュウリを持ったカッパが閉じ込められたガラス瓶アバター。',
+      type: GachaItemType.avatarSkin,
+      rarity: Rarity.R,
+      iconOrAsset: 'assets/images/kappa.png',
+      regionName: '全国',
     ),
+
+const GachaItem(
+  id: 'avatar_katana_jar',
+  name: '二本刀瓶アバター',
+  description: '交差する二本刀が納められたガラス瓶アバター。',
+  type: GachaItemType.avatarSkin,
+  rarity: Rarity.R,
+  iconOrAsset: 'assets/images/katana.png',
+  regionName: '全国',
+),
+
+    // --- N (ノーマル) ---
+    // const GachaItem(
+    //   id: 'frame_simple_wood',
+    //   name: 'ウッドフレーム',
+    //   description: 'ナチュラルな木目調のプロフィール枠。',
+    //   type: GachaItemType.profileFrame,
+    //   rarity: Rarity.N,
+    //   iconOrAsset: '🪵',
+    // ),
     const GachaItem(
       id: 'skin_simple_pin',
       name: 'シンプル旅ピン',
@@ -95,6 +116,16 @@ class GachaService {
       rarity: Rarity.N,
       iconOrAsset: '📍',
     ),
+
+    const GachaItem(
+      id: 'avatar_fuji_jar',
+      name: '富士山瓶アバター',
+      description: '赤日と富士山が描かれためでたいガラス瓶アバター。',
+      type: GachaItemType.avatarSkin,
+      rarity: Rarity.N,
+      iconOrAsset: 'assets/images/MtFuji.png',
+      regionName: '静岡・山梨',
+),
   ];
 
   /// 重み付け抽選でガチャを1回引く

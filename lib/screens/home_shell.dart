@@ -437,27 +437,51 @@ class SavedPage extends StatelessWidget {
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
+  /// アバターのアイコン/アセットを表示する描画ヘルパー
+  Widget _buildAvatarIcon(GachaItem? avatar) {
+    if (avatar == null) {
+      return const Text('🙂', style: TextStyle(fontSize: 48));
+    }
+
+    // アセット画像パスの判定（isAssetImageプロパティまたはパス判定）
+    final isAsset = avatar.isAssetImage ||
+        avatar.iconOrAsset.startsWith('assets/') ||
+        avatar.iconOrAsset.endsWith('.png') ||
+        avatar.iconOrAsset.endsWith('.jpg');
+
+    if (isAsset) {
+      return ClipOval(
+        child: Image.asset(
+          avatar.iconOrAsset,
+          width: 80,
+          height: 80,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return const Icon(
+              Icons.image_not_supported_outlined,
+              size: 48,
+              color: Colors.grey,
+            );
+          },
+        ),
+      );
+    }
+
+    return Text(
+      avatar.iconOrAsset,
+      style: const TextStyle(fontSize: 48),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final user = AuthService.instance.currentUser;
-    // ★重要
-    // ここではInventoryData()を新しく作らない。
-    // main.dartから提供されているInventoryDataを取得する。
     final inventoryData = InventoryProvider.of(context);
 
     return AnimatedBuilder(
       animation: inventoryData,
       builder: (context, _) {
-        final frame = inventoryData.getEquippedItem(
-          GachaItemType.profileFrame,
-        );
-
         final avatar = inventoryData.getEquippedItem(
           GachaItemType.avatarSkin,
-        );
-
-        final badge = inventoryData.getEquippedItem(
-          GachaItemType.badge,
         );
 
         return ListView(
@@ -471,7 +495,7 @@ class ProfilePage extends StatelessWidget {
               child: Column(
                 children: [
                   // ------------------------------------------
-                  // プロフィールアイコン
+                  // プロフィールアイコン（画像・絵文字両対応）
                   // ------------------------------------------
                   Container(
                     width: 112,
@@ -480,117 +504,14 @@ class ProfilePage extends StatelessWidget {
                       shape: BoxShape.circle,
                       color: Colors.white,
                       border: Border.all(
-                        color: frame != null
-                            ? frame.rarity.color
-                            : AppColors.primary,
-                        width: frame != null ? 4 : 2,
+                        color: AppColors.primary,
+                        width: 2,
                       ),
-                      boxShadow: frame != null
-                          ? [
-                              BoxShadow(
-                                color: frame.rarity.color.withOpacity(0.5),
-                                blurRadius: 14,
-                              ),
-                            ]
-                          : null,
                     ),
                     child: Center(
-                      child: Text(
-                        avatar?.iconOrAsset ?? '🙂',
-                        style: const TextStyle(
-                          fontSize: 48,
-                        ),
-                      ),
+                      child: _buildAvatarIcon(avatar),
                     ),
                   ),
-
-                  // ------------------------------------------
-                  // 装備中フレーム名
-                  // ------------------------------------------
-                  if (frame != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      frame.name,
-                      style: TextStyle(
-                        color: frame.rarity.color,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-
-                  // ------------------------------------------
-                  // 装備中バッジ
-                  // ------------------------------------------
-                  if (badge != null) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: badge.rarity.color.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: badge.rarity.color,
-                        ),
-                      ),
-                      child: Text(
-                        '${badge.iconOrAsset} ${badge.name}',
-                        style: TextStyle(
-                          color: badge.rarity.color,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-
-                  // ------------------------------------------
-                  // ログイン中のユーザー情報
-                  // ------------------------------------------
-                  if (user != null) ...[
-                    const SizedBox(height: 16),
-                    FutureBuilder<UserProfile?>(
-                      future: UserRepository.instance.fetchProfile(user.uid),
-                      builder: (context, snap) {
-                        final profile = snap.data;
-                        if (profile == null) {
-                          return const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16),
-                            child: Center(child: CircularProgressIndicator()),
-                          );
-                        }
-
-                        final name = profile.name.isNotEmpty
-                            ? profile.name
-                            : user.displayName ?? UiTranslations.t('名前未設定');
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(
-                              name,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              user.email ?? '',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: AppColors.textGrey,
-                              ),
-                            ),
-                            const SizedBox(height: 18),
-                            FriendManagementPanel(profile: profile),
-                          ],
-                        );
-                      },
-                    ),
-                  ],
                 ],
               ),
             ),
