@@ -4,6 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as ll;
 import 'package:http/http.dart' as http;
 import '../theme/app_colors.dart';
+import '../services/ui_translations.dart';
 
 /// 場所選択ボトムシート。
 /// ミニマップをタップして場所を選ぶ（検索は補助機能）。
@@ -24,7 +25,7 @@ class LocationPickerSheet extends StatefulWidget {
 
 class _LocationPickerSheetState extends State<LocationPickerSheet> {
   late ll.LatLng _selectedPosition;
-  String _placeName = '選択した場所';
+  late String _placeName;
   final _searchController = TextEditingController();
   final _mapController = MapController();
   List<Map<String, dynamic>> _searchResults = [];
@@ -34,6 +35,7 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
   void initState() {
     super.initState();
     _selectedPosition = widget.initialPosition;
+    _placeName = UiTranslations.t('選択した場所');
   }
 
   @override
@@ -103,11 +105,12 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
               ),
             ),
             // タイトル
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
-                '場所を選択',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                UiTranslations.t('場所を選択'),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 8),
@@ -117,7 +120,7 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'スポット名で絞り込み（任意）',
+                  hintText: UiTranslations.t('スポット名で絞り込み（任意）'),
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: _searching
                       ? const SizedBox(
@@ -157,8 +160,10 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
                     final lat = double.parse(result['lat'] as String);
                     final lon = double.parse(result['lon'] as String);
                     return ListTile(
-                      leading: const Icon(Icons.location_on, color: AppColors.primary),
-                      title: Text(name, maxLines: 2, overflow: TextOverflow.ellipsis),
+                      leading: const Icon(Icons.location_on,
+                          color: AppColors.primary),
+                      title: Text(name,
+                          maxLines: 2, overflow: TextOverflow.ellipsis),
                       onTap: () => _selectPosition(ll.LatLng(lat, lon), name),
                     );
                   },
@@ -177,7 +182,7 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
                       initialCenter: _selectedPosition,
                       initialZoom: 15.0,
                       onTap: (tapPosition, point) {
-                        _selectPosition(point, '選択した場所');
+                        _selectPosition(point, UiTranslations.t('選択した場所'));
                       },
                     ),
                     children: [
@@ -231,7 +236,7 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
                     backgroundColor: AppColors.primary,
                     minimumSize: const Size.fromHeight(52),
                   ),
-                  child: const Text('この場所で決定'),
+                  child: Text(UiTranslations.t('この場所で決定')),
                 ),
               ),
             ),
@@ -246,7 +251,8 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
 Future<void> showLocationPickerSheet(
   BuildContext context, {
   required ll.LatLng initialPosition,
-  required void Function(ll.LatLng position, String placeName) onLocationSelected,
+  required void Function(ll.LatLng position, String placeName)
+      onLocationSelected,
 }) {
   return showModalBottomSheet(
     context: context,
