@@ -10,13 +10,14 @@ import 'gacha/inventory_manager.dart';
 import 'gacha/collection_screen.dart';
 import '../widgets/post_tips_dialog.dart';
 import '../widgets/photo_capture_sheet.dart';
+import '../widgets/friend_management_panel.dart';
 import 'package:latlong2/latlong.dart' as ll;
 import 'package:image_picker/image_picker.dart';
 import '../services/photo_upload_service.dart';
 import '../services/user_repository.dart';
 import '../models/user_profile.dart';
 import '../widgets/location_picker_sheet.dart';
-import 'saved/saved_places_screen.dart';
+import 'friend_photo_feed_screen.dart';
 import 'profile/language_region_screen.dart';
 
 class HomeShell extends StatefulWidget {
@@ -197,7 +198,7 @@ class _PostSelectionPageState extends State<PostSelectionPage> {
                     setState(() => _selectedPosition = position);
                     showPhotoCaptureSheet(
                       context,
-                      onTakePhoto: () async {
+                      onTakePhoto: (visibility) async {
                         final picker = ImagePicker();
                         final photo =
                             await picker.pickImage(source: ImageSource.camera);
@@ -210,6 +211,7 @@ class _PostSelectionPageState extends State<PostSelectionPage> {
                           bytes: await photo.readAsBytes(),
                           filename: photo.name,
                           position: position,
+                          visibility: visibility,
                         );
                         if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -219,7 +221,7 @@ class _PostSelectionPageState extends State<PostSelectionPage> {
                                   : 'アップロードに失敗しました')),
                         );
                       },
-                      onPickFromGallery: () async {
+                      onPickFromGallery: (visibility) async {
                         final picker = ImagePicker();
                         final photo =
                             await picker.pickImage(source: ImageSource.gallery);
@@ -232,6 +234,7 @@ class _PostSelectionPageState extends State<PostSelectionPage> {
                           bytes: await photo.readAsBytes(),
                           filename: photo.name,
                           position: position,
+                          visibility: visibility,
                         );
                         if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -421,7 +424,7 @@ class SavedPage extends StatelessWidget {
   const SavedPage({super.key});
   @override
   Widget build(BuildContext context) {
-    return const SavedPlacesScreen(showBackButton: false);
+    return const FriendPhotoFeedScreen();
   }
 }
 
@@ -549,19 +552,38 @@ class ProfilePage extends StatelessWidget {
                     FutureBuilder<UserProfile?>(
                       future: UserRepository.instance.fetchProfile(user.uid),
                       builder: (context, snap) {
-                        final name =
-                            snap.data?.name ?? user.displayName ?? '名前未設定';
+                        final profile = snap.data;
+                        if (profile == null) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+
+                        final name = profile.name.isNotEmpty
+                            ? profile.name
+                            : user.displayName ?? '名前未設定';
+
                         return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Text(
                               name,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
+                            const SizedBox(height: 4),
                             Text(
                               user.email ?? '',
-                              style: const TextStyle(color: AppColors.textGrey),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: AppColors.textGrey,
+                              ),
                             ),
+                            const SizedBox(height: 18),
+                            FriendManagementPanel(profile: profile),
                           ],
                         );
                       },
@@ -570,7 +592,6 @@ class ProfilePage extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(height: 28),
 
             // ------------------------------------------

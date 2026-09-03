@@ -1,19 +1,31 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
+enum PhotoVisibilityChoice { public, friends }
+
 /// 写真投稿の入り口として、「今から撮る」か「アルバムから選ぶ」かを
 /// 選択させるボトムシート。
 ///
 /// 呼び出し側は [showPhotoCaptureSheet] を使うこと。
-class PhotoCaptureSheet extends StatelessWidget {
-  final VoidCallback onTakePhoto;
-  final VoidCallback onPickFromGallery;
+class PhotoCaptureSheet extends StatefulWidget {
+  final Future<void> Function(String visibility) onTakePhoto;
+  final Future<void> Function(String visibility) onPickFromGallery;
 
   const PhotoCaptureSheet({
     super.key,
     required this.onTakePhoto,
     required this.onPickFromGallery,
   });
+
+  @override
+  State<PhotoCaptureSheet> createState() => _PhotoCaptureSheetState();
+}
+
+class _PhotoCaptureSheetState extends State<PhotoCaptureSheet> {
+  PhotoVisibilityChoice _visibility = PhotoVisibilityChoice.friends;
+
+  String get _visibilityValue =>
+      _visibility == PhotoVisibilityChoice.public ? 'public' : 'friends';
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +49,7 @@ class PhotoCaptureSheet extends StatelessWidget {
               title: const Text('今から撮る'),
               onTap: () {
                 Navigator.pop(context);
-                onTakePhoto();
+                widget.onTakePhoto(_visibilityValue);
               },
             ),
             ListTile(
@@ -45,8 +57,42 @@ class PhotoCaptureSheet extends StatelessWidget {
               title: const Text('アルバムから選ぶ'),
               onTap: () {
                 Navigator.pop(context);
-                onPickFromGallery();
+                widget.onPickFromGallery(_visibilityValue);
               },
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '公開範囲',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 8),
+                  SegmentedButton<PhotoVisibilityChoice>(
+                    segments: const [
+                      ButtonSegment(
+                        value: PhotoVisibilityChoice.public,
+                        label: Text('全体公開'),
+                        icon: Icon(Icons.public),
+                      ),
+                      ButtonSegment(
+                        value: PhotoVisibilityChoice.friends,
+                        label: Text('友達のみ'),
+                        icon: Icon(Icons.group),
+                      ),
+                    ],
+                    selected: {_visibility},
+                    onSelectionChanged: (selection) {
+                      setState(() {
+                        _visibility = selection.first;
+                      });
+                    },
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -58,8 +104,8 @@ class PhotoCaptureSheet extends StatelessWidget {
 /// [PhotoCaptureSheet] をボトムシートとして表示するヘルパー関数。
 Future<void> showPhotoCaptureSheet(
   BuildContext context, {
-  required VoidCallback onTakePhoto,
-  required VoidCallback onPickFromGallery,
+  required Future<void> Function(String visibility) onTakePhoto,
+  required Future<void> Function(String visibility) onPickFromGallery,
 }) {
   return showModalBottomSheet(
     context: context,
