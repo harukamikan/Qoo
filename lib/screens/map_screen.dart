@@ -90,6 +90,40 @@ List<Amenity> _amenities = [];
     'Other',
   ];
 
+Widget _buildCurrentLocationMarker(GachaItem? skin) {
+  if (skin == null) {
+    return const CurrentLocationDot();
+  }
+
+  final isAsset = skin.isAssetImage ||
+      skin.iconOrAsset.startsWith('assets/') ||
+      skin.iconOrAsset.endsWith('.png') ||
+      skin.iconOrAsset.endsWith('.jpg') ||
+      skin.iconOrAsset.endsWith('.jpeg');
+
+  if (isAsset) {
+    return Container(
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)], // ← shadows から boxShadow に変更
+      ),
+      child: ClipOval(
+        child: Image.asset(
+          skin.iconOrAsset,
+          width: 44,
+          height: 44,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return const CurrentLocationDot();
+          },
+        ),
+      ),
+    );
+  }
+
+  return CurrentLocationDot(skin: skin);
+}
+  
   final Map<String, int> _carouselIndices = {};
   Timer? _carouselTimer;
 
@@ -773,7 +807,7 @@ List<Amenity> _amenities = [];
                         width: currentSkin != null ? 48 : 24,
                         height: currentSkin != null ? 48 : 24,
                         alignment: Alignment.center,
-                        child: CurrentLocationDot(skin: currentSkin),
+                        child: _buildCurrentLocationMarker(currentSkin),
                       ),
                       // 登録済み店舗（Tips/写真モードに関わらず常に表示）
                       for (final store in _stores)

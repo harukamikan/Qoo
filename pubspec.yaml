@@ -34,3 +34,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+    - assets/images/kappa.png
+    - assets/images/katana.png
+    - assets/images/MtFuji.png
