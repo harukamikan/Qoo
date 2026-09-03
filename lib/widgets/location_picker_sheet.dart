@@ -224,8 +224,8 @@ class _LocationPickerSheetState extends State<LocationPickerSheet> {
                 width: double.infinity,
                 child: FilledButton(
                   onPressed: () {
-                    widget.onLocationSelected(_selectedPosition, _placeName);
-                    Navigator.pop(context);
+                      Navigator.pop(context);
+                      widget.onLocationSelected(_selectedPosition, _placeName);
                   },
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primary,
