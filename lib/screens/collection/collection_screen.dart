@@ -8,7 +8,7 @@ import '../../services/auth_service.dart';
 import '../../theme/app_colors.dart';
 import 'package:latlong2/latlong.dart' as ll;
 
-/// 地域コレクション画面。コレクション一覧、スポット一覧、達成状況、写真投稿を1画面で扱う。
+/// 地域コレクション画面。グリッド型のご当地図鑑スタイルで表示する。
 class TravelCollectionScreen extends StatefulWidget {
   const TravelCollectionScreen({super.key});
 
@@ -20,7 +20,7 @@ class _TravelCollectionScreenState extends State<TravelCollectionScreen> {
   List<TravelCollection> _collections = [];
   TravelCollection? _selectedCollection;
   List<CollectionSpot> _spots = [];
-  Set<String> _postedSpotIds = {};
+  Map<String, String> _postedPhotos = {};
   bool _loading = true;
 
   @override
@@ -50,12 +50,12 @@ class _TravelCollectionScreenState extends State<TravelCollectionScreen> {
     final spots = await CollectionService.fetchSpots(collection.id);
     final uid = AuthService.instance.uid;
     final posted = uid != null
-        ? await CollectionService.fetchMyPostedSpotIds(uid)
-        : <String>{};
+        ? await CollectionService.fetchMyPostedPhotos(uid)
+        : <String, String>{};
     if (!mounted) return;
     setState(() {
       _spots = spots;
-      _postedSpotIds = posted;
+      _postedPhotos = posted;
       _loading = false;
     });
   }
@@ -106,75 +106,126 @@ class _TravelCollectionScreenState extends State<TravelCollectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('地域コレクション')),
+      backgroundColor: const Color(0xFFFDF6E9),
+      appBar: AppBar(
+        title: const Text('ご当地コレクション'),
+        backgroundColor: const Color(0xFFFDF6E9),
+        elevation: 0,
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _collections.isEmpty
               ? const Center(child: Text('コレクションがまだありません'))
-              : Column(
-                  children: [
-                    if (_selectedCollection != null) ...[
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _selectedCollection!.name,
-                              style: const TextStyle(
-                                  fontSize: 22, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _selectedCollection!.description,
-                              style: const TextStyle(color: AppColors.textGrey),
-                            ),
-                            const SizedBox(height: 12),
-                            LinearProgressIndicator(
-                              value: _spots.isEmpty
-                                  ? 0
-                                  : _postedSpotIds.length / _spots.length,
-                              backgroundColor: Colors.grey.shade200,
-                              color: AppColors.primary,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${_postedSpotIds.length} / ${_spots.length} 達成',
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: _spots.length,
-                        itemBuilder: (context, index) {
-                          final spot = _spots[index];
-                          final done = _postedSpotIds.contains(spot.id);
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            child: ListTile(
-                              leading: Icon(
-                                done ? Icons.check_circle : Icons.circle_outlined,
-                                color: done ? AppColors.primary : Colors.grey,
-                                size: 32,
-                              ),
-                              title: Text(spot.name),
-                              subtitle: Text(spot.description),
-                              trailing: done
-                                  ? const Icon(Icons.photo, color: AppColors.primary)
-                                  : IconButton(
-                                      icon: const Icon(Icons.camera_alt),
-                                      onPressed: () => _postPhoto(spot),
-                                    ),
-                            ),
-                          );
-                        },
-                      ),
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black12, blurRadius: 10),
+                      ],
                     ),
-                  ],
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (_selectedCollection != null) ...[
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _selectedCollection!.name,
+                                  style: const TextStyle(
+                                      fontSize: 20, fontWeight: FontWeight.w900),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _selectedCollection!.description,
+                                  style: const TextStyle(color: AppColors.textGrey, fontSize: 13),
+                                ),
+                                const SizedBox(height: 10),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: LinearProgressIndicator(
+                                    value: _spots.isEmpty
+                                        ? 0
+                                        : _postedPhotos.length / _spots.length,
+                                    minHeight: 8,
+                                    backgroundColor: Colors.grey.shade200,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${_postedPhotos.length} / ${_spots.length} 達成',
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 8),
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 8,
+                            mainAxisSpacing: 8,
+                            childAspectRatio: 0.75,
+                          ),
+                          itemCount: _spots.length,
+                          itemBuilder: (context, index) {
+                            final spot = _spots[index];
+                            final photoUrl = _postedPhotos[spot.id];
+                            final done = photoUrl != null;
+                            return GestureDetector(
+                              onTap: done ? null : () => _postPhoto(spot),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFAF3E3),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: const Color(0xFFE5D9BF)),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Expanded(
+                                      child: ClipRRect(
+                                        borderRadius: const BorderRadius.vertical(
+                                            top: Radius.circular(10)),
+                                        child: done
+                                            ? Image.network(photoUrl, fit: BoxFit.cover, width: double.infinity)
+                                            : Center(
+                                                child: Icon(
+                                                  Icons.camera_alt_outlined,
+                                                  color: Colors.grey.shade400,
+                                                  size: 28,
+                                                ),
+                                              ),
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                                      child: Text(
+                                        spot.name,
+                                        textAlign: TextAlign.center,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
     );
   }

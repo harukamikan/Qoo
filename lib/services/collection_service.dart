@@ -36,6 +36,19 @@ class CollectionService {
         .map((doc) => doc.data()['spotId'] as String)
         .toSet();
   }
+    /// 自分の投稿から、spotId→imageUrlのマップを取得する。
+  static Future<Map<String, String>> fetchMyPostedPhotos(String userId) async {
+    final snapshot = await _db
+        .collection('collection_posts')
+        .where('userId', isEqualTo: userId)
+        .get();
+    final map = <String, String>{};
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      map[data['spotId'] as String] = data['imageUrl'] as String;
+    }
+    return map;
+  }
 
   /// スポットへの写真投稿を記録する（imageUrlはPhotoUploadServiceでアップロード済みのURL）。
   static Future<void> postToSpot({
