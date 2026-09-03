@@ -62,6 +62,7 @@ class _MapPageState extends State<MapPage> {
   final MapController _mapController = MapController();
   ll.LatLng _currentCenter = fukuokaFallback;
   List<NearbyComment> _nearbyComments = [];
+  List<LocalHack> _localHacks = [];
   List<TravelPhoto> _nearbyPhotos = [];
   UserProfile? _currentProfile;
   bool _isLoading = true;
@@ -152,6 +153,7 @@ class _MapPageState extends State<MapPage> {
     _loadMyHelpfulIds();
     _startCarouselTimer();
     _alertService.start();
+    _localHacks = LocalHackService.initialHacks;
   }
 
   void _startCarouselTimer() {
@@ -728,6 +730,13 @@ class _MapPageState extends State<MapPage> {
                               ),
                             ),
                           ),
+                          for (final hack in _localHacks)
+                        Marker(
+                          point: ll.LatLng(hack.latitude, hack.longitude),
+                          width: 80,
+                          height: 60,
+                          child: LocalHackMarker(hack: hack),
+                        ),
                     ],
                   ),
                 ],
