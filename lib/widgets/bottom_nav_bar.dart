@@ -45,7 +45,7 @@ class JamBottomNavBar extends StatelessWidget {
     NavItemData(
       icon: Icons.bookmark_border,
       activeIcon: Icons.bookmark,
-      label: '保存',
+      label: '保存写真',
     ),
     NavItemData(
       icon: Icons.person_outline,

@@ -50,7 +50,7 @@ const List<String> kUiTextsEn = [
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await dotenv.load(fileName: ".env");
+  await dotenv.load(fileName: "assets/app.env");
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,

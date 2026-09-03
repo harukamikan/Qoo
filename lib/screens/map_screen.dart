@@ -6,6 +6,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/nearby_alert_service.dart';
+import '../services/auth_service.dart';
+import '../services/user_repository.dart';
 import '../services/ui_translations.dart';
 import '../utils/geo_utils.dart';
 import '../theme/app_colors.dart';
@@ -24,6 +26,7 @@ import '../screens/gacha/coin_manager.dart';
 import '../screens/gacha/inventory_manager.dart';
 import '../screens/gacha/gacha_item.dart';
 import 'package:flutter/foundation.dart';
+import '../models/user_profile.dart';
 
 /// 現在地からこの半径（メートル）以内の投稿だけを表示する。
 const double nearbyRadiusMeters = 1000;
@@ -38,6 +41,11 @@ enum LocationIssue {
   permissionDeniedForever, // 完全拒否（設定から手動で有効にするしかない）
 }
 
+enum MapPhotoFilter {
+  publicOnly,
+  friendsOnly,
+}
+
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
 
@@ -50,10 +58,12 @@ class _MapPageState extends State<MapPage> {
   ll.LatLng _currentCenter = fukuokaFallback;
   List<NearbyComment> _nearbyComments = [];
   List<TravelPhoto> _nearbyPhotos = [];
+  UserProfile? _currentProfile;
   bool _isLoading = true;
   final _alertService = NearbyAlertService();
   LocationIssue _locationIssue = LocationIssue.none;
   String? _commentsError;
+  MapPhotoFilter _photoFilter = MapPhotoFilter.publicOnly;
 
   String _selectedCategoryFilter = 'All';
   String _searchKeyword = '';
@@ -196,7 +206,13 @@ class _MapPageState extends State<MapPage> {
 
     ll.LatLng center = fukuokaFallback;
     LocationIssue locationIssue = LocationIssue.none;
+    UserProfile? profile;
     try {
+      final uid = AuthService.instance.uid;
+      if (uid != null) {
+        profile = await UserRepository.instance.fetchProfile(uid);
+      }
+
       final result = await _getCurrentPosition().timeout(
         const Duration(seconds: 10),
         onTimeout: () => (position: null, issue: LocationIssue.serviceDisabled),
@@ -221,6 +237,9 @@ class _MapPageState extends State<MapPage> {
     try {
       photos = await _fetchNearbyPhotos(
         center,
+        currentUserId: AuthService.instance.uid,
+        friendIds: profile?.friends.toSet() ?? const {},
+        filter: _photoFilter,
       ).timeout(const Duration(milliseconds: 2500), onTimeout: () => []);
     } catch (e) {
       debugPrint('Firestore photo fetch error: $e');
@@ -230,6 +249,7 @@ class _MapPageState extends State<MapPage> {
     setState(() {
       _currentCenter = center;
       _locationIssue = locationIssue;
+      _currentProfile = profile;
       _nearbyComments = comments;
       _nearbyPhotos = photos;
       _commentsError = commentsError;
@@ -356,7 +376,12 @@ class _MapPageState extends State<MapPage> {
     return results;
   }
 
-  Future<List<TravelPhoto>> _fetchNearbyPhotos(ll.LatLng center) async {
+  Future<List<TravelPhoto>> _fetchNearbyPhotos(
+    ll.LatLng center, {
+    required String? currentUserId,
+    required Set<String> friendIds,
+    required MapPhotoFilter filter,
+  }) async {
     final snapshot =
         await FirebaseFirestore.instance.collection('travel_photos').get();
     final results = <TravelPhoto>[];
@@ -365,16 +390,32 @@ class _MapPageState extends State<MapPage> {
       final lat = (data['latitude'] as num?)?.toDouble();
       final lng = (data['longitude'] as num?)?.toDouble();
       final imageUrl = data['imageUrl'] as String?;
-      if (lat == null || lng == null || imageUrl == null) continue;
+      final ownerId = data['userId'] as String? ?? '';
+      final visibility = data['visibility'] as String? ?? 'friends';
+      final createdAtRaw = data['createdAt'];
+      final createdAt = createdAtRaw is Timestamp
+          ? createdAtRaw.toDate()
+          : createdAtRaw as DateTime?;
+      if (lat == null || lng == null || imageUrl == null || ownerId.isEmpty)
+        continue;
       final point = ll.LatLng(lat, lng);
       final distance = distanceMeters(center, point);
-      if (distance <= nearbyRadiusMeters) {
+      final isMine = ownerId == currentUserId;
+      final isFriend = friendIds.contains(ownerId);
+      final matchesFilter = switch (filter) {
+        MapPhotoFilter.publicOnly => visibility == 'public',
+        MapPhotoFilter.friendsOnly =>
+          visibility == 'friends' && (isMine || isFriend),
+      };
+      if (distance <= nearbyRadiusMeters && matchesFilter) {
         results.add(
           TravelPhoto(
             id: doc.id,
             imageUrl: imageUrl,
             position: point,
-            userId: data['userId'] as String? ?? '',
+            userId: ownerId,
+            visibility: visibility,
+            createdAt: createdAt,
             distanceMeters: distance,
           ),
         );
@@ -464,31 +505,85 @@ class _MapPageState extends State<MapPage> {
 
   Widget _mapSearch() => Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Row(
+        child: Column(
           children: [
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: .94),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: const [
-                    BoxShadow(color: Colors.black12, blurRadius: 12),
-                  ],
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: .94),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black12, blurRadius: 12),
+                      ],
+                    ),
+                    child: SearchBarWidget(
+                      showCategoryChips: false,
+                      onSearchChanged: (query, category) {
+                        setState(() {
+                          _searchKeyword = query;
+                        });
+                      },
+                    ),
+                  ),
                 ),
-                child: SearchBarWidget(
-                  showCategoryChips: false,
-                  onSearchChanged: (query, category) {
-                    setState(() {
-                      _searchKeyword = query;
-                    });
-                  },
-                ),
-              ),
+                const SizedBox(width: 8),
+                _modeToggleButton(),
+              ],
             ),
-            const SizedBox(width: 8),
-            _modeToggleButton(),
           ],
         ),
+      );
+
+  Widget _photoFilterToggleButtons() => AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: !_isPhotoMode
+            ? const SizedBox.shrink()
+            : Align(
+                alignment: Alignment.centerRight,
+                child: Container(
+                  key: const ValueKey('photo_filter_toggle'),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: .94),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black12, blurRadius: 12),
+                    ],
+                  ),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.end,
+                    children: [
+                      ChoiceChip(
+                        label: const Text('全体公開'),
+                        selected: _photoFilter == MapPhotoFilter.publicOnly,
+                        onSelected: (selected) {
+                          if (!selected) return;
+                          setState(
+                            () => _photoFilter = MapPhotoFilter.publicOnly,
+                          );
+                          _reloadPhotos();
+                        },
+                      ),
+                      ChoiceChip(
+                        label: const Text('友達のみ'),
+                        selected: _photoFilter == MapPhotoFilter.friendsOnly,
+                        onSelected: (selected) {
+                          if (!selected) return;
+                          setState(
+                            () => _photoFilter = MapPhotoFilter.friendsOnly,
+                          );
+                          _reloadPhotos();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
       );
 
   Widget _modeToggleButton() => Container(
@@ -758,6 +853,8 @@ class _MapPageState extends State<MapPage> {
                       : UiTranslations.t('現在地にTips投稿'),
                 ),
               ),
+              const SizedBox(height: 12),
+              _photoFilterToggleButtons(),
             ],
           ),
         );
@@ -765,7 +862,7 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-  Future<void> _handleTakePhoto() async {
+  Future<void> _handleTakePhoto(String visibility) async {
     final picker = ImagePicker();
     final XFile? photo = await picker.pickImage(source: ImageSource.camera);
     if (photo == null) return;
@@ -779,6 +876,7 @@ class _MapPageState extends State<MapPage> {
       bytes: await photo.readAsBytes(),
       filename: photo.name,
       position: _currentCenter,
+      visibility: visibility,
     );
 
     if (!mounted) return;
@@ -796,8 +894,12 @@ class _MapPageState extends State<MapPage> {
 
   Future<void> _reloadPhotos() async {
     try {
-      final photos = await _fetchNearbyPhotos(_currentCenter)
-          .timeout(const Duration(milliseconds: 2500), onTimeout: () => []);
+      final photos = await _fetchNearbyPhotos(
+        _currentCenter,
+        currentUserId: AuthService.instance.uid,
+        friendIds: _currentProfile?.friends.toSet() ?? const {},
+        filter: _photoFilter,
+      ).timeout(const Duration(milliseconds: 2500), onTimeout: () => []);
       if (!mounted) return;
       setState(() {
         _nearbyPhotos = photos;
@@ -807,7 +909,7 @@ class _MapPageState extends State<MapPage> {
     }
   }
 
-  Future<void> _handlePickFromGallery() async {
+  Future<void> _handlePickFromGallery(String visibility) async {
     final picker = ImagePicker();
     final XFile? photo = await picker.pickImage(source: ImageSource.gallery);
     if (photo == null) return;
@@ -821,6 +923,7 @@ class _MapPageState extends State<MapPage> {
       bytes: await photo.readAsBytes(),
       filename: photo.name,
       position: _currentCenter,
+      visibility: visibility,
     );
 
     if (!mounted) return;
