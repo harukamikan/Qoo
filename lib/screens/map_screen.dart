@@ -18,12 +18,17 @@ import '../models/travel_photo.dart';
 import '../models/store.dart';
 import '../widgets/current_location_dot.dart';
 import '../widgets/grouped_bubble_marker.dart';
-//import '../widgets/report_dialog.dart';
 import '../widgets/post_tips_dialog.dart';
 import '../widgets/location_tips_modal.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/photo_upload_service.dart';
 import '../widgets/photo_capture_sheet.dart';
+
+// ローカルハック用サービスのインポート
+import '../models/local_hack.dart';
+import '../services/local_hack_service.dart';
+
+// ガチャと共有するコイン管理Provider
 import '../screens/gacha/coin_manager.dart';
 import '../screens/gacha/inventory_manager.dart';
 import '../screens/gacha/gacha_item.dart';
@@ -39,15 +44,13 @@ const double nearbyRadiusMeters = 1000;
 
 final ll.LatLng fukuokaFallback = ll.LatLng(33.5902, 130.4017);
 
-/// 現在地取得がなぜうまくいかなかったかを表す。成功時は none。
 enum LocationIssue {
   none,
-  serviceDisabled, // 端末の位置情報サービス自体がオフ
-  permissionDenied, // 今回拒否された（次回また聞ける）
-  permissionDeniedForever, // 完全拒否（設定から手動で有効にするしかない）
+  serviceDisabled,
+  permissionDenied,
+  permissionDeniedForever,
 }
 
-/// タップ時に凹むアニメーションと振動フィードバックを持つジャム瓶ボタン
 class JamJarButton extends StatefulWidget {
   final VoidCallback onTap;
 
@@ -141,12 +144,17 @@ class _MapPageState extends State<MapPage> {
   String? _commentsError;
   MapPhotoFilter _photoFilter = MapPhotoFilter.publicOnly;
 
+  // --- ローカルハック（ルール）管理 ---
+  final LocalHackService _hackService = LocalHackService();
+  List<LocalHack> _nearbyHacks = [];
+  bool _showLocalHacks = true; // ON/OFF切り替えフラグ
+
   String _selectedCategoryFilter = 'All';
   String _searchKeyword = '';
   // --- 地図モード（Tips表示 / 写真表示の切り替え） ---
   bool _isPhotoMode = false; // false = Tips(💬)モード, true = 写真(📷)モード
   bool _showAmenities = false;
-List<Amenity> _amenities = [];
+  List<Amenity> _amenities = [];
 
   final List<String> _categoryFilterList = [
     'All',
@@ -159,40 +167,42 @@ List<Amenity> _amenities = [];
     'Other',
   ];
 
-Widget _buildCurrentLocationMarker(GachaItem? skin) {
-  if (skin == null) {
-    return const CurrentLocationDot();
-  }
+  Widget _buildCurrentLocationMarker(GachaItem? skin) {
+    if (skin == null) {
+      return const CurrentLocationDot();
+    }
 
-  final isAsset = skin.isAssetImage ||
-      skin.iconOrAsset.startsWith('assets/') ||
-      skin.iconOrAsset.endsWith('.png') ||
-      skin.iconOrAsset.endsWith('.jpg') ||
-      skin.iconOrAsset.endsWith('.jpeg');
+    final isAsset = skin.isAssetImage ||
+        skin.iconOrAsset.startsWith('assets/') ||
+        skin.iconOrAsset.endsWith('.png') ||
+        skin.iconOrAsset.endsWith('.jpg') ||
+        skin.iconOrAsset.endsWith('.jpeg');
 
-  if (isAsset) {
-    return Container(
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)], // ← shadows から boxShadow に変更
-      ),
-      child: ClipOval(
-        child: Image.asset(
-          skin.iconOrAsset,
-          width: 44,
-          height: 44,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) {
-            return const CurrentLocationDot();
-          },
+    if (isAsset) {
+      return Container(
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(color: Colors.black26, blurRadius: 4)
+          ], // ← shadows から boxShadow に変更
         ),
-      ),
-    );
+        child: ClipOval(
+          child: Image.asset(
+            skin.iconOrAsset,
+            width: 44,
+            height: 44,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              return const CurrentLocationDot();
+            },
+          ),
+        ),
+      );
+    }
+
+    return CurrentLocationDot(skin: skin);
   }
 
-  return CurrentLocationDot(skin: skin);
-}
-  
   final Map<String, int> _carouselIndices = {};
   Timer? _carouselTimer;
 
@@ -234,14 +244,12 @@ Widget _buildCurrentLocationMarker(GachaItem? skin) {
         .update({'helpful_count': c.helpfulCount}).catchError((_) {});
   }
 
-  /// Tips投稿成功時にコインを加算して通知を出す共通処理
   void _handleTipPosted(NearbyComment newTip) {
     setState(() {
       _nearbyComments.insert(0, newTip);
       _carouselIndices[_toLocationKey(newTip.position)] = 0;
     });
 
-    // コインを30加算
     CoinDataProvider.of(context).addCoins(30);
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -336,6 +344,12 @@ Widget _buildCurrentLocationMarker(GachaItem? skin) {
       locationIssue = result.issue;
     } catch (_) {}
 
+    // 周辺ローカルハックの取得
+    final hacks = _hackService.getHacksAroundUser(
+      userLat: center.latitude,
+      userLng: center.longitude,
+    );
+
     List<NearbyComment> comments = [];
     String? commentsError;
     try {
@@ -373,6 +387,7 @@ Widget _buildCurrentLocationMarker(GachaItem? skin) {
       _currentProfile = profile;
       _nearbyComments = comments;
       _nearbyPhotos = photos;
+      _nearbyHacks = hacks;
       _stores = stores;
       _commentsError = commentsError;
       _isLoading = false;
@@ -625,6 +640,58 @@ Widget _buildCurrentLocationMarker(GachaItem? skin) {
     }
   }
 
+  void _showHackDetailModal(LocalHack hack) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        maxChildSize: 0.85,
+        minChildSize: 0.3,
+        expand: false,
+        builder: (context, scrollController) => Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: ListView(
+            controller: scrollController,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Text(
+                hack.title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Chip(
+                label: Text(hack.category),
+                backgroundColor: Colors.amber.shade100,
+              ),
+              const Divider(height: 24),
+              Text(
+                hack.content,
+                style: const TextStyle(fontSize: 15, height: 1.5),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _deleteSingleTip(
     NearbyComment comment,
     BuildContext sheetCtx,
@@ -684,7 +751,6 @@ Widget _buildCurrentLocationMarker(GachaItem? skin) {
     }
   }
 
-  /// ジャム瓶タップ時に「いいねしたTipsの一覧」を表示するモーダル
   void _showLikedTipsModal() {
     final likedComments = _nearbyComments
         .where((comment) => _myHelpfulIds.contains(comment.id))
@@ -738,7 +804,8 @@ Widget _buildCurrentLocationMarker(GachaItem? skin) {
                           itemCount: likedComments.length,
                           itemBuilder: (context, index) {
                             final comment = likedComments[index];
-                            final catColor = _getCategoryColor(comment.category);
+                            final catColor =
+                                _getCategoryColor(comment.category);
                             return Card(
                               margin: const EdgeInsets.only(bottom: 12),
                               elevation: 2,
@@ -776,7 +843,8 @@ Widget _buildCurrentLocationMarker(GachaItem? skin) {
                                             vertical: 4,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: catColor.withValues(alpha: 0.15),
+                                            color: catColor.withValues(
+                                                alpha: 0.15),
                                             borderRadius:
                                                 BorderRadius.circular(12),
                                           ),
@@ -819,7 +887,8 @@ Widget _buildCurrentLocationMarker(GachaItem? skin) {
                                                 setModalState(() {
                                                   if (!_myHelpfulIds
                                                       .contains(comment.id)) {
-                                                    likedComments.remove(comment);
+                                                    likedComments
+                                                        .remove(comment);
                                                   }
                                                 });
                                               },
@@ -899,7 +968,7 @@ Widget _buildCurrentLocationMarker(GachaItem? skin) {
                 ),
                 const SizedBox(width: 8),
                 _modeToggleButton(),
-                 const SizedBox(width: 8),
+                const SizedBox(width: 8),
                 _amenityToggleButton(),
               ],
             ),
@@ -979,11 +1048,13 @@ Widget _buildCurrentLocationMarker(GachaItem? skin) {
           },
         ),
       );
-        Widget _amenityToggleButton() => Container(
+  Widget _amenityToggleButton() => Container(
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: _showAmenities ? AppColors.primary : Colors.white.withValues(alpha: .94),
+          color: _showAmenities
+              ? AppColors.primary
+              : Colors.white.withValues(alpha: .94),
           shape: BoxShape.circle,
           boxShadow: const [
             BoxShadow(color: Colors.black12, blurRadius: 12),
@@ -1045,7 +1116,7 @@ Widget _buildCurrentLocationMarker(GachaItem? skin) {
                       context,
                       targetPosition: point,
                       currentCenter: _currentCenter,
-                      onPosted: _handleTipPosted, // コイン加算対応
+                      onPosted: _handleTipPosted,
                     );
                   },
                 ),
@@ -1059,6 +1130,7 @@ Widget _buildCurrentLocationMarker(GachaItem? skin) {
                   ),
                   MarkerLayer(
                     markers: [
+                      // 現在地ピン
                       Marker(
                         point: _currentCenter,
                         width: currentSkin != null ? 48 : 24,
@@ -1066,7 +1138,20 @@ Widget _buildCurrentLocationMarker(GachaItem? skin) {
                         alignment: Alignment.center,
                         child: _buildCurrentLocationMarker(currentSkin),
                       ),
+
+                      if (_showLocalHacks)
+                        for (final hack in LocalHackService.initialHacks)
+                          Marker(
+                            point: ll.LatLng(hack.latitude, hack.longitude),
+                            width: 80,
+                            height: 60,
+                            alignment: Alignment.bottomCenter,
+                            child: LocalHackMarker(hack: hack),
+                          ),
+
+                      // Tips モード時のバブルピン
                       // 登録済み店舗（Tips/写真モードに関わらず常に表示）
+
                       for (final store in _stores)
                         Marker(
                           point: ll.LatLng(store.latitude, store.longitude),
@@ -1111,10 +1196,11 @@ Widget _buildCurrentLocationMarker(GachaItem? skin) {
                                   isHelpfulByMe: _isHelpfulByMe,
                                   onDeleteTip: _deleteSingleTip,
                                   onToggleHelpful: _toggleHelpful,
-                                  onPosted: _handleTipPosted, // コイン加算対応
+                                  onPosted: _handleTipPosted,
                                 ),
                               ),
                             ),
+                      // 写真モード時のピン
                       if (_isPhotoMode)
                         for (final entry in _getGroupedPhotos().entries)
                           Marker(
@@ -1143,14 +1229,16 @@ Widget _buildCurrentLocationMarker(GachaItem? skin) {
                               ),
                             ),
                           ),
-                      for (final hack in _localHacks)
-                        Marker(
-                          point: ll.LatLng(hack.latitude, hack.longitude),
-                          width: 80,
-                          height: 60,
-                          child: LocalHackMarker(hack: hack),
-                        ),
-                        if (_showAmenities)
+                      if (_showLocalHacks)
+                        for (final hack in _localHacks)
+                          Marker(
+                            point: ll.LatLng(hack.latitude, hack.longitude),
+                            width: 80,
+                            height: 60,
+                            alignment: Alignment.bottomCenter,
+                            child: LocalHackMarker(hack: hack),
+                          ),
+                      if (_showAmenities)
                         for (final amenity in _amenities)
                           Marker(
                             point: amenity.position,
@@ -1167,7 +1255,8 @@ Widget _buildCurrentLocationMarker(GachaItem? skin) {
                                   width: 2,
                                 ),
                                 boxShadow: const [
-                                  BoxShadow(color: Colors.black26, blurRadius: 4),
+                                  BoxShadow(
+                                      color: Colors.black26, blurRadius: 4),
                                 ],
                               ),
                               child: Center(
@@ -1231,6 +1320,8 @@ Widget _buildCurrentLocationMarker(GachaItem? skin) {
                   ),
                 ),
               ),
+
+              // ジャム瓶ボタン
               Positioned(
                 right: 80,
                 bottom: 90,
@@ -1238,11 +1329,43 @@ Widget _buildCurrentLocationMarker(GachaItem? skin) {
                   onTap: _showLikedTipsModal,
                 ),
               ),
+
+              // --- ズーム ＆ ローカルハック切り替えボタン ---
               Positioned(
                 right: 24,
                 bottom: 165,
                 child: Column(
                   children: [
+                    // ローカルルール（ハック）ピンの表示/非表示トグルボタン
+                    FloatingActionButton.small(
+                      heroTag: 'toggle_hacks_btn',
+                      backgroundColor:
+                          _showLocalHacks ? Colors.amber : Colors.white,
+                      foregroundColor:
+                          _showLocalHacks ? Colors.white : AppColors.textGrey,
+                      onPressed: () {
+                        setState(() {
+                          _showLocalHacks = !_showLocalHacks;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              _showLocalHacks
+                                  ? 'ローカルルールを表示しました'
+                                  : 'ローカルルールを非表示にしました',
+                            ),
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      },
+                      tooltip: 'ルール表示切替',
+                      child: Icon(
+                        _showLocalHacks
+                            ? Icons.lightbulb
+                            : Icons.lightbulb_outline,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     FloatingActionButton.small(
                       heroTag: 'zoom_in_btn',
                       backgroundColor: Colors.white,
@@ -1306,7 +1429,7 @@ Widget _buildCurrentLocationMarker(GachaItem? skin) {
                           context,
                           targetPosition: _currentCenter,
                           currentCenter: _currentCenter,
-                          onPosted: _handleTipPosted, // コイン加算対応
+                          onPosted: _handleTipPosted,
                         ),
                 icon: Icon(_isPhotoMode ? Icons.camera_alt : Icons.add_comment),
                 label: Text(
@@ -1346,7 +1469,7 @@ Widget _buildCurrentLocationMarker(GachaItem? skin) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('写真を投稿しました')),
       );
-      await _reloadPhotos(); // 写真リストを更新して即座にマップに反映
+      await _reloadPhotos();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('アップロードに失敗しました')),
@@ -1393,7 +1516,7 @@ Widget _buildCurrentLocationMarker(GachaItem? skin) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('写真を投稿しました')),
       );
-      await _reloadPhotos(); // 写真リストを更新して即座にマップに反映
+      await _reloadPhotos();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('アップロードに失敗しました')),
