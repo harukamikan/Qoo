@@ -5,6 +5,7 @@ import '../../models/collection_spot.dart';
 import '../../services/collection_service.dart';
 import '../../services/photo_upload_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/ui_translations.dart';
 import '../../theme/app_colors.dart';
 import 'package:latlong2/latlong.dart' as ll;
 import '../../models/store.dart';
@@ -30,9 +31,10 @@ class _TravelCollectionScreenState extends State<TravelCollectionScreen> {
   void initState() {
     super.initState();
     _loadCollections();
-        _loadApprovedStores();
+    _loadApprovedStores();
   }
-    Future<void> _loadApprovedStores() async {
+
+  Future<void> _loadApprovedStores() async {
     final stores = await StoreRepository.instance.fetchApprovedStores();
     if (!mounted) return;
     setState(() => _approvedStores = stores);
@@ -76,7 +78,7 @@ class _TravelCollectionScreenState extends State<TravelCollectionScreen> {
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('アップロード中...')),
+      SnackBar(content: Text(UiTranslations.t('アップロード中...'))),
     );
 
     final imageUrl = await PhotoUploadService.uploadAndSave(
@@ -89,7 +91,7 @@ class _TravelCollectionScreenState extends State<TravelCollectionScreen> {
     if (imageUrl == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('アップロードに失敗しました')),
+        SnackBar(content: Text(UiTranslations.t('アップロードに失敗しました'))),
       );
       return;
     }
@@ -105,65 +107,67 @@ class _TravelCollectionScreenState extends State<TravelCollectionScreen> {
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('達成しました！')),
+      SnackBar(content: Text(UiTranslations.t('達成しました！'))),
     );
     if (_selectedCollection != null) {
       _selectCollection(_selectedCollection!);
     }
   }
-Future<void> _postPhotoForStore(Store store) async {
-  final picker = ImagePicker();
-  final photo = await picker.pickImage(source: ImageSource.camera);
-  if (photo == null) return;
 
-  if (!mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('アップロード中...')),
-  );
+  Future<void> _postPhotoForStore(Store store) async {
+    final picker = ImagePicker();
+    final photo = await picker.pickImage(source: ImageSource.camera);
+    if (photo == null) return;
 
-  final imageUrl = await PhotoUploadService.uploadAndSave(
-    bytes: await photo.readAsBytes(),
-    filename: photo.name,
-    position: ll.LatLng(store.latitude, store.longitude),
-    visibility: 'public',
-  );
-
-  if (imageUrl == null) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('アップロードに失敗しました')),
+      SnackBar(content: Text(UiTranslations.t('アップロード中...'))),
     );
-    return;
+
+    final imageUrl = await PhotoUploadService.uploadAndSave(
+      bytes: await photo.readAsBytes(),
+      filename: photo.name,
+      position: ll.LatLng(store.latitude, store.longitude),
+      visibility: 'public',
+    );
+
+    if (imageUrl == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(UiTranslations.t('アップロードに失敗しました'))),
+      );
+      return;
+    }
+
+    final uid = AuthService.instance.uid;
+    if (uid != null) {
+      await CollectionService.postToSpot(
+        spotId: store.id,
+        userId: uid,
+        imageUrl: imageUrl,
+      );
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(UiTranslations.t('達成しました！'))),
+    );
+    _loadApprovedStores();
   }
 
-  final uid = AuthService.instance.uid;
-  if (uid != null) {
-    await CollectionService.postToSpot(
-      spotId: store.id,
-      userId: uid,
-      imageUrl: imageUrl,
-    );
-  }
-
-  if (!mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('達成しました！')),
-  );
-  _loadApprovedStores();
-}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF6E9),
       appBar: AppBar(
-        title: const Text('ご当地コレクション'),
+        title: Text(UiTranslations.t('ご当地コレクション')),
         backgroundColor: const Color(0xFFFDF6E9),
         elevation: 0,
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _collections.isEmpty
-              ? const Center(child: Text('コレクションがまだありません'))
+              ? Center(child: Text(UiTranslations.t('コレクションがまだありません')))
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Container(
@@ -180,19 +184,22 @@ Future<void> _postPhotoForStore(Store store) async {
                       children: [
                         if (_selectedCollection != null) ...[
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 4, vertical: 8),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   _selectedCollection!.name,
                                   style: const TextStyle(
-                                      fontSize: 20, fontWeight: FontWeight.w900),
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w900),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   _selectedCollection!.description,
-                                  style: const TextStyle(color: AppColors.textGrey, fontSize: 13),
+                                  style: const TextStyle(
+                                      color: AppColors.textGrey, fontSize: 13),
                                 ),
                                 const SizedBox(height: 10),
                                 ClipRRect(
@@ -208,7 +215,7 @@ Future<void> _postPhotoForStore(Store store) async {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '${_postedPhotos.length} / ${_spots.length} 達成',
+                                  '${_postedPhotos.length} / ${_spots.length} ${UiTranslations.t('達成')}',
                                   style: const TextStyle(fontSize: 12),
                                 ),
                               ],
@@ -219,7 +226,8 @@ Future<void> _postPhotoForStore(Store store) async {
                         GridView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 3,
                             crossAxisSpacing: 8,
                             mainAxisSpacing: 8,
@@ -236,16 +244,20 @@ Future<void> _postPhotoForStore(Store store) async {
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFFAF3E3),
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: const Color(0xFFE5D9BF)),
+                                  border: Border.all(
+                                      color: const Color(0xFFE5D9BF)),
                                 ),
                                 child: Column(
                                   children: [
                                     Expanded(
                                       child: ClipRRect(
-                                        borderRadius: const BorderRadius.vertical(
-                                            top: Radius.circular(10)),
+                                        borderRadius:
+                                            const BorderRadius.vertical(
+                                                top: Radius.circular(10)),
                                         child: done
-                                            ? Image.network(photoUrl, fit: BoxFit.cover, width: double.infinity)
+                                            ? Image.network(photoUrl,
+                                                fit: BoxFit.cover,
+                                                width: double.infinity)
                                             : Center(
                                                 child: Icon(
                                                   Icons.camera_alt_outlined,
@@ -256,13 +268,16 @@ Future<void> _postPhotoForStore(Store store) async {
                                       ),
                                     ),
                                     Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 6, horizontal: 4),
                                       child: Text(
                                         spot.name,
                                         textAlign: TextAlign.center,
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold),
                                       ),
                                     ),
                                   ],
@@ -270,25 +285,27 @@ Future<void> _postPhotoForStore(Store store) async {
                               ),
                             );
                           },
-                                               ),
+                        ),
                         if (_approvedStores.isNotEmpty) ...[
                           const SizedBox(height: 24),
-                          const Text(
-                            'お店コレクション',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                          Text(
+                            UiTranslations.t('お店コレクション'),
+                            style: const TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.w900),
                           ),
                           const SizedBox(height: 8),
                           GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 3,
                               crossAxisSpacing: 8,
                               mainAxisSpacing: 8,
                               childAspectRatio: 0.75,
                             ),
                             itemCount: _approvedStores.length,
-                                                        itemBuilder: (context, index) {
+                            itemBuilder: (context, index) {
                               final store = _approvedStores[index];
                               return GestureDetector(
                                 onTap: () => _postPhotoForStore(store),
@@ -296,7 +313,8 @@ Future<void> _postPhotoForStore(Store store) async {
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFFAF3E3),
                                     borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: const Color(0xFFE5D9BF)),
+                                    border: Border.all(
+                                        color: const Color(0xFFE5D9BF)),
                                   ),
                                   child: Column(
                                     children: [
@@ -310,13 +328,16 @@ Future<void> _postPhotoForStore(Store store) async {
                                         ),
                                       ),
                                       Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 6, horizontal: 4),
                                         child: Text(
                                           store.name,
                                           textAlign: TextAlign.center,
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                          style: const TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold),
                                         ),
                                       ),
                                     ],

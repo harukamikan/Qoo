@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/local_hack.dart';
+import '../services/ui_translations.dart';
 
 class LocalHackDialog extends StatelessWidget {
   final LocalHack hack;
@@ -31,13 +32,14 @@ class LocalHackDialog extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.orange.shade100,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '💡 Local Hack (${hack.category})',
+                  '💡 Local Hack (${UiTranslations.t(hack.category)})',
                   style: TextStyle(
                     color: Colors.orange.shade900,
                     fontWeight: FontWeight.bold,
@@ -48,14 +50,14 @@ class LocalHackDialog extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            hack.title,
+            UiTranslations.t(hack.title),
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const Divider(height: 24),
           Expanded(
             child: SingleChildScrollView(
               child: Text(
-                hack.content,
+                UiTranslations.t(hack.content),
                 style: const TextStyle(fontSize: 15, height: 1.6),
               ),
             ),

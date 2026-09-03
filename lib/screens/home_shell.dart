@@ -542,7 +542,7 @@ class ProfilePage extends StatelessWidget {
               ),
             ),
 
-                       const SizedBox(height: 16),
+            const SizedBox(height: 16),
             // ------------------------------------------
             // 地域コレクション
             // ------------------------------------------
@@ -556,7 +556,7 @@ class ProfilePage extends StatelessWidget {
                 );
               },
               icon: const Icon(Icons.map),
-              label: const Text('地域コレクション'),
+              label: Text(UiTranslations.t('地域コレクション')),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(52),
                 foregroundColor: AppColors.primary,
@@ -567,23 +567,23 @@ class ProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             OutlinedButton.icon(
-  onPressed: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const StoreApprovalScreen(),
-      ),
-    );
-  },
-  icon: const Icon(Icons.admin_panel_settings),
-  label: const Text('店舗承認（Admin）'),
-  style: OutlinedButton.styleFrom(
-    minimumSize: const Size.fromHeight(52),
-    foregroundColor: Colors.orange,
-    side: const BorderSide(color: Colors.orange),
-  ),
-),
-const SizedBox(height: 16),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const StoreApprovalScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.admin_panel_settings),
+              label: Text(UiTranslations.t('店舗承認（Admin）')),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(52),
+                foregroundColor: Colors.orange,
+                side: const BorderSide(color: Colors.orange),
+              ),
+            ),
+            const SizedBox(height: 16),
 
             // ------------------------------------------
             // 言語と地域

@@ -8,6 +8,7 @@ import 'services/ui_translations.dart';
 import 'screens/gacha/inventory_manager.dart';
 import 'state/app_data.dart';
 import 'screens/gacha/coin_manager.dart';
+import 'services/local_hack_service.dart';
 
 /// アプリ起動時に翻訳しておくUI固定文言の一覧（日本語）。
 /// 新しい画面・文言を追加したら、ここにも追加する。
@@ -37,6 +38,8 @@ const List<String> kUiTexts = [
   '言語と地域',
   'ログアウト',
   '名前未設定',
+  '地域コレクション',
+  '店舗承認（Admin）',
   // フレンド機能
   '友達ID',
   '公開ID',
@@ -146,6 +149,31 @@ const List<String> kUiTexts = [
   '届かない場合は迷惑メールフォルダもご確認ください',
   '店舗コメント・Local Hackの編集は準備中です',
   '観光客側の地図をプレビュー',
+  // Local Hack（観光ガイド）
+  '櫛田神社 参拝ガイド（7 Step）',
+  '東長寺 拝観＆護摩焚きガイド',
+  '🚌 バスの乗り方ガイド（博多エリア）',
+  '♨ 銭湯・温泉の基本マナー（博多エリア）',
+  '🏮 屋台（Yatai）を楽しむマナー＆コツ',
+  '🍜 博多ラーメンを楽しむマナー＆コツ',
+  LocalHackService.kushidaContent,
+  LocalHackService.tochojiContent,
+  LocalHackService.busContent,
+  LocalHackService.onsenContent,
+  LocalHackService.yataiContent,
+  LocalHackService.ramenContent,
+  // Local Hackカテゴリ
+  '神社',
+  '寺',
+  '温泉・銭湯',
+  'グルメ・屋台',
+  'グルメ・ラーメン',
+  // 地域コレクション画面
+  '達成しました！',
+  'ご当地コレクション',
+  'コレクションがまだありません',
+  '達成',
+  'お店コレクション',
 ];
 
 /// アプリ起動時に翻訳しておくUI固定文言の一覧（英語）。
