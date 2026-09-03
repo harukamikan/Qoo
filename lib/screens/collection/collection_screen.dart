@@ -7,6 +7,8 @@ import '../../services/photo_upload_service.dart';
 import '../../services/auth_service.dart';
 import '../../theme/app_colors.dart';
 import 'package:latlong2/latlong.dart' as ll;
+import '../../models/store.dart';
+import '../../services/store_repository.dart';
 
 /// 地域コレクション画面。グリッド型のご当地図鑑スタイルで表示する。
 class TravelCollectionScreen extends StatefulWidget {
@@ -21,12 +23,19 @@ class _TravelCollectionScreenState extends State<TravelCollectionScreen> {
   TravelCollection? _selectedCollection;
   List<CollectionSpot> _spots = [];
   Map<String, String> _postedPhotos = {};
+  List<Store> _approvedStores = [];
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
     _loadCollections();
+        _loadApprovedStores();
+  }
+    Future<void> _loadApprovedStores() async {
+    final stores = await StoreRepository.instance.fetchApprovedStores();
+    if (!mounted) return;
+    setState(() => _approvedStores = stores);
   }
 
   Future<void> _loadCollections() async {
@@ -102,7 +111,46 @@ class _TravelCollectionScreenState extends State<TravelCollectionScreen> {
       _selectCollection(_selectedCollection!);
     }
   }
+Future<void> _postPhotoForStore(Store store) async {
+  final picker = ImagePicker();
+  final photo = await picker.pickImage(source: ImageSource.camera);
+  if (photo == null) return;
 
+  if (!mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('アップロード中...')),
+  );
+
+  final imageUrl = await PhotoUploadService.uploadAndSave(
+    bytes: await photo.readAsBytes(),
+    filename: photo.name,
+    position: ll.LatLng(store.latitude, store.longitude),
+    visibility: 'public',
+  );
+
+  if (imageUrl == null) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('アップロードに失敗しました')),
+    );
+    return;
+  }
+
+  final uid = AuthService.instance.uid;
+  if (uid != null) {
+    await CollectionService.postToSpot(
+      spotId: store.id,
+      userId: uid,
+      imageUrl: imageUrl,
+    );
+  }
+
+  if (!mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('達成しました！')),
+  );
+  _loadApprovedStores();
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -222,7 +270,62 @@ class _TravelCollectionScreenState extends State<TravelCollectionScreen> {
                               ),
                             );
                           },
-                        ),
+                                               ),
+                        if (_approvedStores.isNotEmpty) ...[
+                          const SizedBox(height: 24),
+                          const Text(
+                            'お店コレクション',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                          ),
+                          const SizedBox(height: 8),
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              crossAxisSpacing: 8,
+                              mainAxisSpacing: 8,
+                              childAspectRatio: 0.75,
+                            ),
+                            itemCount: _approvedStores.length,
+                                                        itemBuilder: (context, index) {
+                              final store = _approvedStores[index];
+                              return GestureDetector(
+                                onTap: () => _postPhotoForStore(store),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFAF3E3),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: const Color(0xFFE5D9BF)),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Expanded(
+                                        child: Center(
+                                          child: Icon(
+                                            Icons.storefront,
+                                            color: Colors.grey.shade400,
+                                            size: 28,
+                                          ),
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                                        child: Text(
+                                          store.name,
+                                          textAlign: TextAlign.center,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
                       ],
                     ),
                   ),
