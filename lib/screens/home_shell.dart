@@ -20,6 +20,7 @@ import '../models/user_profile.dart';
 import '../widgets/location_picker_sheet.dart';
 import 'friend_photo_feed_screen.dart';
 import 'profile/language_region_screen.dart';
+import 'admin/store_approval_screen.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -644,6 +645,24 @@ class ProfilePage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
+            OutlinedButton.icon(
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const StoreApprovalScreen(),
+      ),
+    );
+  },
+  icon: const Icon(Icons.admin_panel_settings),
+  label: const Text('店舗承認（Admin）'),
+  style: OutlinedButton.styleFrom(
+    minimumSize: const Size.fromHeight(52),
+    foregroundColor: Colors.orange,
+    side: const BorderSide(color: Colors.orange),
+  ),
+),
+const SizedBox(height: 16),
 
             // ------------------------------------------
             // 言語と地域

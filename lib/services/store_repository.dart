@@ -39,4 +39,24 @@ class StoreRepository {
     final snap = await _col.doc(uid).get();
     return snap.exists && (snap.data()?['name'] as String?)?.isNotEmpty == true;
   }
+  /// 未承認の店舗一覧を取得する（Admin画面用）。
+  Future<List<Store>> fetchPendingStores() async {
+    final snap = await _col.where('isApproved', isEqualTo: false).get();
+    return snap.docs.map((doc) => Store.fromMap(doc.id, doc.data())).toList();
+  }
+
+  /// 承認済みの店舗一覧を取得する（カテゴリ指定可）。
+  Future<List<Store>> fetchApprovedStores({String? category}) async {
+    Query<Map<String, dynamic>> query = _col.where('isApproved', isEqualTo: true);
+    if (category != null) {
+      query = query.where('category', isEqualTo: category);
+    }
+    final snap = await query.get();
+    return snap.docs.map((doc) => Store.fromMap(doc.id, doc.data())).toList();
+  }
+
+  /// 店舗を承認する。
+  Future<void> approveStore(String storeId) async {
+    await _col.doc(storeId).update({'isApproved': true});
+  }
 }
