@@ -27,11 +27,10 @@ import '../screens/gacha/inventory_manager.dart';
 import '../screens/gacha/gacha_item.dart';
 import 'package:flutter/foundation.dart';
 import '../models/user_profile.dart';
-import 'package:flutter/foundation.dart';
-import '../models/user_profile.dart';
 import '../models/local_hack.dart';
 import '../widgets/local_hack_marker.dart';
 import '../services/local_hack_service.dart';
+import '../services/osm_amenity_service.dart';
 
 /// 現在地からこの半径（メートル）以内の投稿だけを表示する。
 const double nearbyRadiusMeters = 1000;
@@ -75,6 +74,8 @@ class _MapPageState extends State<MapPage> {
   String _searchKeyword = '';
   // --- 地図モード（Tips表示 / 写真表示の切り替え） ---
   bool _isPhotoMode = false; // false = Tips(💬)モード, true = 写真(📷)モード
+  bool _showAmenities = false;
+List<Amenity> _amenities = [];
 
   final List<String> _categoryFilterList = [
     'All',
@@ -537,6 +538,8 @@ class _MapPageState extends State<MapPage> {
                 ),
                 const SizedBox(width: 8),
                 _modeToggleButton(),
+                 const SizedBox(width: 8),
+                _amenityToggleButton(),
               ],
             ),
           ],
@@ -612,6 +615,36 @@ class _MapPageState extends State<MapPage> {
             setState(() {
               _isPhotoMode = !_isPhotoMode;
             });
+          },
+        ),
+      );
+        Widget _amenityToggleButton() => Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: _showAmenities ? AppColors.primary : Colors.white.withValues(alpha: .94),
+          shape: BoxShape.circle,
+          boxShadow: const [
+            BoxShadow(color: Colors.black12, blurRadius: 12),
+          ],
+        ),
+        child: IconButton(
+          icon: Text(
+            '🚻',
+            style: TextStyle(
+              fontSize: 20,
+              color: _showAmenities ? Colors.white : null,
+            ),
+          ),
+          onPressed: () async {
+            setState(() => _showAmenities = !_showAmenities);
+            if (_showAmenities && _amenities.isEmpty) {
+              final amenities = await OsmAmenityService.fetchAmenities(
+                center: _currentCenter,
+              );
+              if (!mounted) return;
+              setState(() => _amenities = amenities);
+            }
           },
         ),
       );
@@ -737,6 +770,34 @@ class _MapPageState extends State<MapPage> {
                           height: 60,
                           child: LocalHackMarker(hack: hack),
                         ),
+                        if (_showAmenities)
+                        for (final amenity in _amenities)
+                          Marker(
+                            point: amenity.position,
+                            width: 36,
+                            height: 36,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: amenity.type == 'toilets'
+                                      ? Colors.blue
+                                      : Colors.brown,
+                                  width: 2,
+                                ),
+                                boxShadow: const [
+                                  BoxShadow(color: Colors.black26, blurRadius: 4),
+                                ],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  amenity.type == 'toilets' ? '🚻' : '🗑️',
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                              ),
+                            ),
+                          ),
                     ],
                   ),
                 ],
