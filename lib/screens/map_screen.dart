@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as ll;
 import 'package:geolocator/geolocator.dart';
@@ -44,6 +45,74 @@ enum LocationIssue {
   serviceDisabled, // 端末の位置情報サービス自体がオフ
   permissionDenied, // 今回拒否された（次回また聞ける）
   permissionDeniedForever, // 完全拒否（設定から手動で有効にするしかない）
+}
+
+/// タップ時に凹むアニメーションと振動フィードバックを持つジャム瓶ボタン
+class JamJarButton extends StatefulWidget {
+  final VoidCallback onTap;
+
+  const JamJarButton({super.key, required this.onTap});
+
+  @override
+  State<JamJarButton> createState() => _JamJarButtonState();
+}
+
+class _JamJarButtonState extends State<JamJarButton> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) {
+        setState(() => _isPressed = true);
+        HapticFeedback.lightImpact();
+      },
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+      },
+      onTapCancel: () {
+        setState(() => _isPressed = false);
+      },
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        widget.onTap();
+      },
+      child: AnimatedScale(
+        scale: _isPressed ? 0.88 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOutCubic,
+        child: Container(
+          width: 75,
+          height: 75,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Image.asset(
+            'assets/images/fuji_jam_jar.png',
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Text('🫙', style: TextStyle(fontSize: 38)),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 enum MapPhotoFilter {
@@ -615,6 +684,194 @@ Widget _buildCurrentLocationMarker(GachaItem? skin) {
     }
   }
 
+  /// ジャム瓶タップ時に「いいねしたTipsの一覧」を表示するモーダル
+  void _showLikedTipsModal() {
+    final likedComments = _nearbyComments
+        .where((comment) => _myHelpfulIds.contains(comment.id))
+        .toList();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.65,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                  child: Text(
+                    'あなたが 👍 をしたTips',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textGrey,
+                    ),
+                  ),
+                ),
+                const Divider(),
+                Expanded(
+                  child: likedComments.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'いいねしたTipsはまだありません',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: likedComments.length,
+                          itemBuilder: (context, index) {
+                            final comment = likedComments[index];
+                            final catColor = _getCategoryColor(comment.category);
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Text(
+                                              comment.userCountry,
+                                              style:
+                                                  const TextStyle(fontSize: 16),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              comment.userName,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: catColor.withValues(alpha: 0.15),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          child: Text(
+                                            comment.category,
+                                            style: TextStyle(
+                                              color: catColor,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      comment.content,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          comment.placeName,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                        InkWell(
+                                          onTap: () {
+                                            _toggleHelpful(
+                                              comment,
+                                              onLocalUpdate: () {
+                                                setModalState(() {
+                                                  if (!_myHelpfulIds
+                                                      .contains(comment.id)) {
+                                                    likedComments.remove(comment);
+                                                  }
+                                                });
+                                              },
+                                            );
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.pink.shade50,
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                const Icon(
+                                                  Icons.thumb_up,
+                                                  size: 14,
+                                                  color: Colors.pink,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  '${comment.helpfulCount}',
+                                                  style: const TextStyle(
+                                                    color: Colors.pink,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _mapSearch() => Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Column(
@@ -972,6 +1229,13 @@ Widget _buildCurrentLocationMarker(GachaItem? skin) {
                       );
                     },
                   ),
+                ),
+              ),
+              Positioned(
+                right: 80,
+                bottom: 90,
+                child: JamJarButton(
+                  onTap: _showLikedTipsModal,
                 ),
               ),
               Positioned(
