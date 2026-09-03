@@ -5,7 +5,6 @@ import '../../state/app_data.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/category_chip.dart';
 import '../review_detail/review_detail_screen.dart';
-import '../gacha/coin_manager.dart';
 import '../gacha/inventory_manager.dart';
 import 'comment_bubble.dart';
 import 'map_painter.dart';

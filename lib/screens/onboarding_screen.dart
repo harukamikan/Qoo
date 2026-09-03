@@ -80,6 +80,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           name: _nameController.text.trim(),
           nationality: _selectedNationality!,
           language: _selectedLanguage!,
+          friendCode: UserRepository.defaultFriendCode(uid),
+          friends: const [],
         ),
       );
     } catch (e) {
