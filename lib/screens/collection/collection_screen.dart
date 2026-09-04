@@ -11,6 +11,7 @@ import 'package:latlong2/latlong.dart' as ll;
 import '../../models/store.dart';
 import '../../services/store_repository.dart';
 import 'everyone_collection_screen.dart';
+import '../../widgets/photo_capture_sheet.dart';
 
 /// 地域コレクション画面。グリッド型のご当地図鑑スタイルで表示する。
 class TravelCollectionScreen extends StatefulWidget {
@@ -93,11 +94,17 @@ class _TravelCollectionScreenState extends State<TravelCollectionScreen>
       _loading = false;
     });
   }
+    void _choosePhotoSource(CollectionSpot spot) {
+    showPhotoCaptureSheet(
+      context,
+      onTakePhoto: (_) => _postPhoto(spot, ImageSource.camera),
+      onPickFromGallery: (_) => _postPhoto(spot, ImageSource.gallery),
+    );
+  }
 
-  Future<void> _postPhoto(CollectionSpot spot) async {
+  Future<void> _postPhoto(CollectionSpot spot, ImageSource source) async {
     final picker = ImagePicker();
-    final photo = await picker.pickImage(source: ImageSource.camera);
-    if (photo == null) return;
+    final photo = await picker.pickImage(source: source);    if (photo == null) return;
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -136,12 +143,17 @@ class _TravelCollectionScreenState extends State<TravelCollectionScreen>
       _selectCollection(_selectedCollection!);
     }
   }
-  
+    void _choosePhotoSourceForStore(Store store) {
+    showPhotoCaptureSheet(
+      context,
+      onTakePhoto: (_) => _postPhotoForStore(store, ImageSource.camera),
+      onPickFromGallery: (_) => _postPhotoForStore(store, ImageSource.gallery),
+    );
+  }
 
-  Future<void> _postPhotoForStore(Store store) async {
+    Future<void> _postPhotoForStore(Store store, ImageSource source) async {
     final picker = ImagePicker();
-    final photo = await picker.pickImage(source: ImageSource.camera);
-    if (photo == null) return;
+    final photo = await picker.pickImage(source: source);    if (photo == null) return;
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -277,7 +289,7 @@ class _TravelCollectionScreenState extends State<TravelCollectionScreen>
                                 final photoUrl = _postedPhotos[spot.id];
                                 final done = photoUrl != null;
                                 return GestureDetector(
-                                  onTap: done ? null : () => _postPhoto(spot),
+                                  onTap: done ? null : () => _choosePhotoSource(spot),
                                   child: Container(
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFFAF3E3),
@@ -357,7 +369,7 @@ class _TravelCollectionScreenState extends State<TravelCollectionScreen>
                                   itemBuilder: (context, index) {
                                     final store = entry.value[index];
                                     return GestureDetector(
-                                      onTap: () => _postPhotoForStore(store),
+                                      onTap: () => _choosePhotoSourceForStore(store),
                                       child: Container(
                                         decoration: BoxDecoration(
                                           color: const Color(0xFFFAF3E3),

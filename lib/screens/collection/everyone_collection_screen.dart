@@ -62,7 +62,14 @@ class _EveryoneCollectionScreenState extends State<EveryoneCollectionScreen> {
       setState(() => _loading = false);
     }
   }
-    Future<void> _toggleLike(String ownerUid, bool currentlyLiked) async {
+  
+
+  Future<void> _selectCollection(TravelCollection collection) async {
+    setState(() {
+      _selected = collection;
+      _loading = true;
+    });
+      Future<void> _toggleLike(String ownerUid, bool currentlyLiked) async {
     final myUid = AuthService.instance.uid;
     if (myUid == null || _selected == null) return;
     final collectionId = _selected!.id;
@@ -96,12 +103,6 @@ class _EveryoneCollectionScreenState extends State<EveryoneCollectionScreen> {
       }
     } catch (_) {}
   }
-
-  Future<void> _selectCollection(TravelCollection collection) async {
-    setState(() {
-      _selected = collection;
-      _loading = true;
-    });
 
     // そのコレクションのスポット（id -> 名前）
     final spots = await CollectionService.fetchSpots(collection.id);
