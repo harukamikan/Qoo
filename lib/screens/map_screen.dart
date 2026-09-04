@@ -292,12 +292,29 @@ class _MapPageState extends State<MapPage> {
     _startLocationTimer();
     _alertService.start();
     _localHacks = LocalHackService.initialHacks;
+    _loadFirestoreHacks();
   }
     void _startLocationTimer() {
     _locationTimer = Timer.periodic(const Duration(minutes: 3), (_) {
       if (!mounted) return;
       _loadEverything(); // 3分ごとに位置と周辺データを更新
     });
+  }
+    Future<void> _loadFirestoreHacks() async {
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('local_hacks')
+          .get();
+      final firestoreHacks = snap.docs
+          .map((d) => LocalHack.fromMap(d.id, d.data()))
+          .toList();
+      if (!mounted) return;
+      setState(() {
+        _localHacks = [...LocalHackService.initialHacks, ...firestoreHacks];
+      });
+    } catch (e) {
+      debugPrint('local_hacks fetch error: $e');
+    }
   }
 
   void _startCarouselTimer() {
@@ -1320,16 +1337,6 @@ class _MapPageState extends State<MapPage> {
                         alignment: Alignment.center,
                         child: _buildCurrentLocationMarker(currentSkin),
                       ),
-
-                      if (_showLocalHacks)
-                        for (final hack in LocalHackService.initialHacks)
-                          Marker(
-                            point: ll.LatLng(hack.latitude, hack.longitude),
-                            width: 80,
-                            height: 60,
-                            alignment: Alignment.bottomCenter,
-                            child: LocalHackMarker(hack: hack),
-                          ),
 
                       // Tips モード時のバブルピン
                       // 登録済み店舗（Tips/写真モードに関わらず常に表示）

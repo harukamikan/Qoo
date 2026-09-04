@@ -20,7 +20,6 @@ import '../models/user_profile.dart';
 import '../widgets/location_picker_sheet.dart';
 import 'friend_photo_feed_screen.dart';
 import 'profile/language_region_screen.dart';
-import 'admin/store_approval_screen.dart';
 import 'profile/app_settings_screen.dart';
 
 class HomeShell extends StatefulWidget {
@@ -516,19 +515,6 @@ class ProfilePage extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (_) => const LanguageRegionScreen(),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.admin_panel_settings),
-              title: Text(UiTranslations.t('店舗承認（Admin）')),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const StoreApprovalScreen(),
                   ),
                 );
               },

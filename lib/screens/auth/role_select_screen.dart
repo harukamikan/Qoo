@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/user_role.dart';
 import '../../services/auth_service.dart';
+import '../admin/admin_home_screen.dart';
 
 /// ログイン前に「観光客として使うか」「お店として登録するか」を選ぶ画面。
 /// 選択結果は [AuthService.pendingRole] に保持され、[AuthGate] が
@@ -51,6 +52,17 @@ class RoleSelectScreen extends StatelessWidget {
                   padding: EdgeInsets.symmetric(vertical: 12),
                   child: Text('お店を登録する'),
                 ),
+              ),
+                            const SizedBox(height: 24),
+              TextButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AdminHomeScreen(),
+                  ),
+                ),
+                icon: const Icon(Icons.admin_panel_settings, size: 18),
+                label: const Text('運営ページ'),
               ),
             ],
           ),
