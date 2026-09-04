@@ -17,6 +17,7 @@ import '../models/nearby_comment.dart';
 import '../models/travel_photo.dart';
 import '../models/store.dart';
 import '../models/trash_bin.dart';
+import '../models/toilet.dart';
 import '../widgets/current_location_dot.dart';
 import '../widgets/grouped_bubble_marker.dart';
 import '../widgets/post_tips_dialog.dart';
@@ -175,6 +176,7 @@ class _MapPageState extends State<MapPage> {
   bool _isPhotoMode = false; // false = Tips(💬)モード, true = 写真(📷)モード
   bool _showAmenities = false;
   List<Amenity> _amenities = [];
+  List<Toilet> _toilets = [];
 
   final List<String> _categoryFilterList = [
     'All',
@@ -1236,12 +1238,26 @@ class _MapPageState extends State<MapPage> {
           ),
           onPressed: () async {
             setState(() => _showAmenities = !_showAmenities);
+            
             if (_showAmenities && _amenities.isEmpty) {
               final amenities = await OsmAmenityService.fetchAmenities(
                 center: _currentCenter,
               );
               if (!mounted) return;
               setState(() => _amenities = amenities);
+              // Firestoreのユーザー投稿トイレも取得
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('toilets')
+          .get();
+      final toilets = snap.docs
+          .map((d) => Toilet.fromMap(d.id, d.data()))
+          .toList();
+      if (!mounted) return;
+      setState(() => _toilets = toilets);
+    } catch (e) {
+      debugPrint('toilets fetch error: $e');
+    }
             }
           },
         ),
@@ -1441,6 +1457,33 @@ class _MapPageState extends State<MapPage> {
                                 child: Text(
                                   amenity.type == 'toilets' ? '🚻' : '🗑️',
                                   style: const TextStyle(fontSize: 16),
+                                ),
+                              ),
+                            ),
+                          ),
+                                                if (_showAmenities)
+                        for (final toilet in _toilets)
+                          Marker(
+                            point: ll.LatLng(toilet.latitude, toilet.longitude),
+                            width: 36,
+                            height: 36,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.blue,
+                                  width: 2,
+                                ),
+                                boxShadow: const [
+                                  BoxShadow(
+                                      color: Colors.black26, blurRadius: 4),
+                                ],
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  '🚻',
+                                  style: TextStyle(fontSize: 16),
                                 ),
                               ),
                             ),

@@ -26,6 +26,7 @@ void showPostTipsDialog(
   final contentController = TextEditingController();
   String selectedCategory = 'Food';
   bool hasTrashBin = false; // 「ここにゴミ箱がある」チェック
+  bool hasToilet = false; // 「ここにトイレがある」チェック
   final categories = [
     'Food',
     'Onsen',
@@ -143,6 +144,19 @@ void showPostTipsDialog(
                       style: const TextStyle(fontSize: 13),
                     ),
                   ),
+                    CheckboxListTile(
+                    value: hasToilet,
+                    onChanged: (checked) {
+                      setDialogState(() => hasToilet = checked ?? false);
+                    },
+                    controlAffinity: ListTileControlAffinity.leading,
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    title: Text(
+                      '🚻 ${UiTranslations.t('ここにトイレがある')}',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -230,6 +244,20 @@ void showPostTipsDialog(
                       });
                     } catch (e) {
                       debugPrint('trash_bins save error: $e');
+                    }
+                  }
+                                    if (hasToilet) {
+                    try {
+                      await FirebaseFirestore.instance
+                          .collection('toilets')
+                          .add({
+                        'latitude': targetPosition.latitude,
+                        'longitude': targetPosition.longitude,
+                        'userId': uid ?? '',
+                        'createdAt': FieldValue.serverTimestamp(),
+                      });
+                    } catch (e) {
+                      debugPrint('toilets save error: $e');
                     }
                   }
 
