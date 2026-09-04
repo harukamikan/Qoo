@@ -16,6 +16,7 @@ import '../widgets/search_bar_widget.dart';
 import '../models/nearby_comment.dart';
 import '../models/travel_photo.dart';
 import '../models/store.dart';
+import '../models/trash_bin.dart';
 import '../widgets/current_location_dot.dart';
 import '../widgets/grouped_bubble_marker.dart';
 import '../widgets/post_tips_dialog.dart';
@@ -137,6 +138,8 @@ class _MapPageState extends State<MapPage> {
   List<LocalHack> _localHacks = [];
   List<TravelPhoto> _nearbyPhotos = [];
   List<Store> _stores = [];
+  List<TrashBin> _trashBins = [];
+  bool _showTrashBins = false; // ON/OFF切り替えフラグ（ローカルハックと同じノリ）
   UserProfile? _currentProfile;
   bool _isLoading = true;
   final _alertService = NearbyAlertService();
@@ -380,6 +383,14 @@ class _MapPageState extends State<MapPage> {
       debugPrint('Firestore store fetch error: $e');
     }
 
+    List<TrashBin> trashBins = [];
+    try {
+      trashBins = await _fetchTrashBins()
+          .timeout(const Duration(milliseconds: 2500), onTimeout: () => []);
+    } catch (e) {
+      debugPrint('Firestore trash_bins fetch error: $e');
+    }
+
     if (!mounted) return;
     setState(() {
       _currentCenter = center;
@@ -389,6 +400,7 @@ class _MapPageState extends State<MapPage> {
       _nearbyPhotos = photos;
       _nearbyHacks = hacks;
       _stores = stores;
+      _trashBins = trashBins;
       _commentsError = commentsError;
       _isLoading = false;
     });
@@ -572,6 +584,21 @@ class _MapPageState extends State<MapPage> {
       final data = doc.data();
       if (data['latitude'] == null || data['longitude'] == null) continue;
       results.add(Store.fromMap(doc.id, data));
+    }
+    return results;
+  }
+
+  /// ユーザー投稿によるゴミ箱を全件取得する。OSM（Overpass API）のゴミ箱データが
+  /// 日本だと少なすぎて地図に出せないため、Tips投稿のついでに登録してもらった
+  /// ものをここで表示する。店舗と同様、確認しやすいよう距離では絞り込まない。
+  Future<List<TrashBin>> _fetchTrashBins() async {
+    final snapshot =
+        await FirebaseFirestore.instance.collection('trash_bins').get();
+    final results = <TrashBin>[];
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      if (data['latitude'] == null || data['longitude'] == null) continue;
+      results.add(TrashBin.fromMap(doc.id, data));
     }
     return results;
   }
@@ -1170,6 +1197,18 @@ class _MapPageState extends State<MapPage> {
                             ),
                           ),
                         ),
+                      // ユーザー投稿のゴミ箱（トグルでON/OFF）
+                      if (_showTrashBins)
+                        for (final bin in _trashBins)
+                          Marker(
+                            point: ll.LatLng(bin.latitude, bin.longitude),
+                            width: 32,
+                            height: 32,
+                            child: const Text(
+                              '🗑️',
+                              style: TextStyle(fontSize: 26),
+                            ),
+                          ),
                       if (!_isPhotoMode)
                         for (final entry in groupedComments.entries)
                           if (entry.value.isNotEmpty)
@@ -1364,6 +1403,32 @@ class _MapPageState extends State<MapPage> {
                             ? Icons.lightbulb
                             : Icons.lightbulb_outline,
                       ),
+                    ),
+                    const SizedBox(height: 8),
+                    // ゴミ箱ピンの表示/非表示トグルボタン
+                    FloatingActionButton.small(
+                      heroTag: 'toggle_trash_bins_btn',
+                      backgroundColor:
+                          _showTrashBins ? Colors.brown : Colors.white,
+                      foregroundColor:
+                          _showTrashBins ? Colors.white : AppColors.textGrey,
+                      onPressed: () {
+                        setState(() {
+                          _showTrashBins = !_showTrashBins;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              _showTrashBins
+                                  ? 'ゴミ箱を表示しました'
+                                  : 'ゴミ箱を非表示にしました',
+                            ),
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      },
+                      tooltip: 'ゴミ箱表示切替',
+                      child: const Text('🗑️', style: TextStyle(fontSize: 18)),
                     ),
                     const SizedBox(height: 8),
                     FloatingActionButton.small(

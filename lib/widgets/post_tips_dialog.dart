@@ -25,6 +25,7 @@ void showPostTipsDialog(
   final placeController = TextEditingController(text: initialPlaceName ?? '');
   final contentController = TextEditingController();
   String selectedCategory = 'Food';
+  bool hasTrashBin = false; // 「ここにゴミ箱がある」チェック
   final categories = [
     'Food',
     'Onsen',
@@ -128,6 +129,20 @@ void showPostTipsDialog(
                       border: const OutlineInputBorder(),
                     ),
                   ),
+                  const SizedBox(height: 4),
+                  CheckboxListTile(
+                    value: hasTrashBin,
+                    onChanged: (checked) {
+                      setDialogState(() => hasTrashBin = checked ?? false);
+                    },
+                    controlAffinity: ListTileControlAffinity.leading,
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    title: Text(
+                      '🗑️ ${UiTranslations.t('ここにゴミ箱がある')}',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -194,6 +209,25 @@ void showPostTipsDialog(
                     newDocId = ref.id;
                   } catch (e) {
                     debugPrint('Firebase save note: $e');
+                  }
+
+                  // 「ここにゴミ箱がある」がチェックされていれば、ついでに
+                  // trash_bins コレクションにも登録する。失敗してもTips投稿
+                  // 自体は継続する（トイレ🚻と同じくOSMのゴミ箱データが
+                  // 日本だと少ないため、ユーザー投稿で補う）。
+                  if (hasTrashBin) {
+                    try {
+                      await FirebaseFirestore.instance
+                          .collection('trash_bins')
+                          .add({
+                        'latitude': targetPosition.latitude,
+                        'longitude': targetPosition.longitude,
+                        'userId': uid ?? '',
+                        'createdAt': FieldValue.serverTimestamp(),
+                      });
+                    } catch (e) {
+                      debugPrint('trash_bins save error: $e');
+                    }
                   }
 
                   final newTip = NearbyComment(
