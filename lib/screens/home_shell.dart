@@ -475,6 +475,78 @@ class ProfilePage extends StatelessWidget {
       style: const TextStyle(fontSize: 48),
     );
   }
+    void _openSettings(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.notifications_outlined),
+              title: Text(UiTranslations.t('アプリ設定')),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AppSettingsScreen(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.language),
+              title: Text(UiTranslations.t('言語と地域')),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const LanguageRegionScreen(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.admin_panel_settings),
+              title: Text(UiTranslations.t('店舗承認（Admin）')),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const StoreApprovalScreen(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: Text(UiTranslations.t('ログアウト')),
+              onTap: () {
+                Navigator.pop(context);
+                AuthService.instance.signOut();
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -491,6 +563,13 @@ class ProfilePage extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.all(24),
           children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                icon: const Icon(Icons.settings),
+                onPressed: () => _openSettings(context),
+              ),
+            ),
             PageHeader(UiTranslations.t('プロフィール')),
 
             const SizedBox(height: 8),
@@ -613,80 +692,7 @@ class ProfilePage extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-                        OutlinedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AppSettingsScreen(),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.settings),
-              label: Text(UiTranslations.t('アプリ設定')),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(52),
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(
-                  color: AppColors.primary,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const StoreApprovalScreen(),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.admin_panel_settings),
-              label: Text(UiTranslations.t('店舗承認（Admin）')),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(52),
-                foregroundColor: Colors.orange,
-                side: const BorderSide(color: Colors.orange),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // ------------------------------------------
-            // 言語と地域
-            // ------------------------------------------
-            OutlinedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const LanguageRegionScreen(),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.language),
-              label: Text(UiTranslations.t('言語と地域')),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(52),
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(
-                  color: AppColors.primary,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // ------------------------------------------
-            // ログアウト
-            // ------------------------------------------
-            OutlinedButton.icon(
-              onPressed: () => AuthService.instance.signOut(),
-              icon: const Icon(Icons.logout),
-              label: Text(UiTranslations.t('ログアウト')),
-            ),
-          ],
+           ],
         );
       },
     );
