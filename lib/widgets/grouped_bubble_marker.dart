@@ -143,14 +143,28 @@ class GroupedBubbleMarker extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
-                        child: Text(
-                          activeComment.placeName,
-                          style: TextStyle(
-                            fontSize: 9,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.bold,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                        child: Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                activeComment.placeName,
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Text(
+                              ' • ${activeComment.relativeTime}',
+                              style: TextStyle(
+                                fontSize: 8.5,
+                                color: Colors.grey[500],
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
                       ),
                       Row(

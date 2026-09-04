@@ -486,6 +486,14 @@ class _MapPageState extends State<MapPage> {
       final lng = (data['longitude'] as num?)?.toDouble();
       if (lat == null || lng == null) continue;
 
+      // Firestoreのcreated_at（Timestamp）をDateTimeに変換。
+      // serverTimestamp()が確定する前の一瞬や、既存データに無い場合は
+      // 現在時刻をフォールバックとして使う。
+      final createdAtRaw = data['created_at'];
+      final createdAt = createdAtRaw is Timestamp
+          ? createdAtRaw.toDate()
+          : DateTime.now();
+
       final point = ll.LatLng(lat, lng);
       final distance = distanceMeters(center, point);
       if (distance <= nearbyRadiusMeters) {
@@ -504,6 +512,7 @@ class _MapPageState extends State<MapPage> {
                     ?.map((key, value) => MapEntry(key, value.toString())) ??
                 const {},
             originalLang: data['original_lang'] as String? ?? 'ja',
+            createdAt: createdAt,
           ),
         );
       }
@@ -961,6 +970,14 @@ class _MapPageState extends State<MapPage> {
                                       style: const TextStyle(
                                         fontSize: 15,
                                         height: 1.3,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      comment.relativeTime,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey.shade500,
                                       ),
                                     ),
                                     const SizedBox(height: 12),

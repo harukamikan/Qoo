@@ -173,8 +173,11 @@ void showPostTipsDialog(
                     translations = {originalLang: originalContent};
                   }
 
-                  String newDocId =
-                      DateTime.now().millisecondsSinceEpoch.toString();
+                  // ローカルの即時反映用（Firestoreのserver timestampが
+                  // 確定するまでのつなぎとして、投稿した瞬間の時刻を使う）
+                  final localCreatedAt = DateTime.now();
+
+                  String newDocId = localCreatedAt.millisecondsSinceEpoch.toString();
                   try {
                     final ref = await FirebaseFirestore.instance
                         .collection('comments')
@@ -211,6 +214,7 @@ void showPostTipsDialog(
                     ),
                     translations: translations,
                     originalLang: originalLang,
+                    createdAt: localCreatedAt, // ← サーバー確定前の仮の投稿日時
                   );
 
                   onPosted(newTip);
