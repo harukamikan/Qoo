@@ -141,6 +141,7 @@ class _MapPageState extends State<MapPage> {
   List<Store> _stores = [];
   List<TrashBin> _trashBins = [];
   bool _showTrashBins = false; // ON/OFF切り替えフラグ（ローカルハックと同じノリ）
+  bool _bannerDismissed = false;
   UserProfile? _currentProfile;
   bool _isLoading = true;
   final _alertService = NearbyAlertService();
@@ -1442,6 +1443,7 @@ class _MapPageState extends State<MapPage> {
               _mapSearch(),
                             // 近くのお知らせバナー（設定でON、かつ近くに何かある時だけ）
               if (AppData.instance.alertEnabled &&
+              !_bannerDismissed &&
                   (_nearbyTipsCount + _nearbyHackCount + _nearbyStoreCount) > 0)
                 Positioned(
                   top: 165,
@@ -1466,6 +1468,13 @@ class _MapPageState extends State<MapPage> {
                             '近くに Tips$_nearbyTipsCount・ルール$_nearbyHackCount・お店$_nearbyStoreCount 件',
                             style: const TextStyle(
                                 fontSize: 13, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => setState(() => _bannerDismissed = true),
+                          child: const Padding(
+                            padding: EdgeInsets.only(left: 8),
+                            child: Icon(Icons.close, size: 18, color: Colors.grey),
                           ),
                         ),
                       ],
