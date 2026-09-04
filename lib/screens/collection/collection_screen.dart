@@ -136,6 +136,7 @@ class _TravelCollectionScreenState extends State<TravelCollectionScreen>
       _selectCollection(_selectedCollection!);
     }
   }
+  
 
   Future<void> _postPhotoForStore(Store store) async {
     final picker = ImagePicker();
@@ -403,6 +404,7 @@ class _TravelCollectionScreenState extends State<TravelCollectionScreen>
           EveryoneCollectionScreen(
             collectionName: _selectedCollection?.name ?? '',
             spotIds: _spots.map((s) => s.id).toList(),
+                        spotNames: {for (final s in _spots) s.id: s.name},
           ),
         ],
       ),
