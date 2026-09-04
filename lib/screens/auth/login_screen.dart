@@ -52,7 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const Icon(Icons.travel_explore, size: 72),
               const SizedBox(height: 16),
               const Text(
-                'Qoo',
+                'Jam',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900),
               ),
