@@ -69,40 +69,7 @@ class _EveryoneCollectionScreenState extends State<EveryoneCollectionScreen> {
       _selected = collection;
       _loading = true;
     });
-      Future<void> _toggleLike(String ownerUid, bool currentlyLiked) async {
-    final myUid = AuthService.instance.uid;
-    if (myUid == null || _selected == null) return;
-    final collectionId = _selected!.id;
-    final key = '${ownerUid}_$collectionId';
-
-    // 楽観的更新（先に画面を変える）
-    setState(() {
-      final set = _sheetLikes[key] ?? <String>{};
-      if (currentlyLiked) {
-        set.remove(myUid);
-      } else {
-        set.add(myUid);
-      }
-      _sheetLikes[key] = set;
-    });
-
-    // Firestore反映
-    try {
-      if (currentlyLiked) {
-        await CollectionService.removeSheetLike(
-          sheetOwnerUid: ownerUid,
-          collectionId: collectionId,
-          likerUid: myUid,
-        );
-      } else {
-        await CollectionService.addSheetLike(
-          sheetOwnerUid: ownerUid,
-          collectionId: collectionId,
-          likerUid: myUid,
-        );
-      }
-    } catch (_) {}
-  }
+      
 
     // そのコレクションのスポット（id -> 名前）
     final spots = await CollectionService.fetchSpots(collection.id);
@@ -148,6 +115,39 @@ class _EveryoneCollectionScreenState extends State<EveryoneCollectionScreen> {
       _sheetLikes = likes;
       _loading = false;
     });
+  }
+  
+  Future<void> _toggleLike(String ownerUid, bool currentlyLiked) async {
+    final myUid = AuthService.instance.uid;
+    if (myUid == null || _selected == null) return;
+    final collectionId = _selected!.id;
+    final key = '${ownerUid}_$collectionId';
+
+    setState(() {
+      final set = _sheetLikes[key] ?? <String>{};
+      if (currentlyLiked) {
+        set.remove(myUid);
+      } else {
+        set.add(myUid);
+      }
+      _sheetLikes[key] = set;
+    });
+
+    try {
+      if (currentlyLiked) {
+        await CollectionService.removeSheetLike(
+          sheetOwnerUid: ownerUid,
+          collectionId: collectionId,
+          likerUid: myUid,
+        );
+      } else {
+        await CollectionService.addSheetLike(
+          sheetOwnerUid: ownerUid,
+          collectionId: collectionId,
+          likerUid: myUid,
+        );
+      }
+    } catch (_) {}
   }
 
   @override

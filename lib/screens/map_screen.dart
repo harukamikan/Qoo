@@ -24,6 +24,7 @@ import '../widgets/location_tips_modal.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/photo_upload_service.dart';
 import '../widgets/photo_capture_sheet.dart';
+import '../state/app_data.dart';
 
 // ローカルハック用サービスのインポート
 import '../models/local_hack.dart';
@@ -143,6 +144,21 @@ class _MapPageState extends State<MapPage> {
   UserProfile? _currentProfile;
   bool _isLoading = true;
   final _alertService = NearbyAlertService();
+  
+  // --- 近くのお知らせ（バナー）用の件数 ---
+  static const double _nearbyBannerRadius = 500; // 500m以内を「近く」とする
+
+  int get _nearbyTipsCount => _nearbyComments
+      .where((c) => distanceMeters(_currentCenter, c.position) <= _nearbyBannerRadius)
+      .length;
+
+  int get _nearbyHackCount => _localHacks
+      .where((h) => distanceMeters(_currentCenter, ll.LatLng(h.latitude, h.longitude)) <= _nearbyBannerRadius)
+      .length;
+
+  int get _nearbyStoreCount => _stores
+      .where((s) => distanceMeters(_currentCenter, ll.LatLng(s.latitude, s.longitude)) <= _nearbyBannerRadius)
+      .length;
   LocationIssue _locationIssue = LocationIssue.none;
   String? _commentsError;
   MapPhotoFilter _photoFilter = MapPhotoFilter.publicOnly;
@@ -1424,6 +1440,38 @@ class _MapPageState extends State<MapPage> {
                 ],
               ),
               _mapSearch(),
+                            // 近くのお知らせバナー（設定でON、かつ近くに何かある時だけ）
+              if (AppData.instance.alertEnabled &&
+                  (_nearbyTipsCount + _nearbyHackCount + _nearbyStoreCount) > 0)
+                Positioned(
+                  top: 165,
+                  left: 20,
+                  right: 20,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: .95),
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black12, blurRadius: 8),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        const Text('🔔', style: TextStyle(fontSize: 18)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '近くに Tips$_nearbyTipsCount・ルール$_nearbyHackCount・お店$_nearbyStoreCount 件',
+                            style: const TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               Positioned(
                 top: 96,
                 left: 0,

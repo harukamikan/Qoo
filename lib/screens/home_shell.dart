@@ -21,6 +21,7 @@ import '../widgets/location_picker_sheet.dart';
 import 'friend_photo_feed_screen.dart';
 import 'profile/language_region_screen.dart';
 import 'admin/store_approval_screen.dart';
+import 'profile/app_settings_screen.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -604,6 +605,26 @@ class ProfilePage extends StatelessWidget {
               },
               icon: const Icon(Icons.map),
               label: Text(UiTranslations.t('地域コレクション')),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(52),
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+                        OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AppSettingsScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.settings),
+              label: Text(UiTranslations.t('アプリ設定')),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(52),
                 foregroundColor: AppColors.primary,

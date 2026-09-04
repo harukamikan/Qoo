@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../../state/app_data.dart';
 import '../../theme/app_colors.dart';
 
@@ -33,16 +32,18 @@ class AppSettingsScreen extends StatelessWidget {
                       data.setAlertEnabled(v);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content:
-                              Text(v ? '100mアラートをオンにしました' : '100mアラートをオフにしました'),
+                          content: Text(v
+                              ? '近くのお知らせをオンにしました'
+                              : '近くのお知らせをオフにしました'),
                         ),
                       );
                     },
                     title: const Text(
-                      '100mアラート',
+                      '近くのお知らせ',
                       style: TextStyle(fontWeight: FontWeight.w700),
                     ),
-                    subtitle: const Text('保存したスポットの100m以内に近づいたら通知します'),
+                    subtitle: const Text(
+                        '近くにあるTips・ローカルルール・お店をマップ上でお知らせします'),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -50,7 +51,7 @@ class AppSettingsScreen extends StatelessWidget {
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                          content: Text('🔔 テスト通知：近くに保存済みスポットがあります')),
+                          content: Text('🔔 テスト：近くにTips・お店などがあります')),
                     );
                   },
                   icon: const Icon(Icons.notifications_active_outlined),
