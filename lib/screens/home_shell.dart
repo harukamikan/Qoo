@@ -634,9 +634,7 @@ class ProfilePage extends StatelessWidget {
                                 color: AppColors.textGrey,
                               ),
                             ),
-                            const SizedBox(height: 18),
-                            FriendManagementPanel(profile: profile),
-                          ],
+                                ],
                         );
                       },
                     ),
@@ -646,55 +644,94 @@ class ProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 28),
 
+                        // ------------------------------------------
+            // コレクション（ガチャ・地域を横並び）
             // ------------------------------------------
-            // コレクション
-            // ------------------------------------------
-            OutlinedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const CollectionScreen(),
+            Row(
+              children: [
+                Expanded(
+                  child: _CollectionCard(
+                    icon: Icons.style,
+                    label: UiTranslations.t('ガチャ\nコレクション'),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const CollectionScreen(),
+                      ),
+                    ),
                   ),
-                );
-              },
-              icon: const Icon(Icons.style),
-              label: Text(UiTranslations.t('コレクションを見る')),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(52),
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(
-                  color: AppColors.primary,
                 ),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _CollectionCard(
+                    icon: Icons.map,
+                    label: UiTranslations.t('地域\nコレクション'),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const TravelCollectionScreen(),
+                      ),
+                    ),
+                  ),
+                ),
+                
+              ],
             ),
-
             const SizedBox(height: 16),
-            // ------------------------------------------
-            // 地域コレクション
-            // ------------------------------------------
-            OutlinedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const TravelCollectionScreen(),
-                  ),
-                );
+            FutureBuilder<UserProfile?>(
+              future: user == null
+                  ? Future.value(null)
+                  : UserRepository.instance.fetchProfile(user.uid),
+              builder: (context, snap) {
+                final profile = snap.data;
+                if (profile == null) return const SizedBox.shrink();
+                return FriendManagementPanel(profile: profile);
               },
-              icon: const Icon(Icons.map),
-              label: Text(UiTranslations.t('地域コレクション')),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(52),
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(
-                  color: AppColors.primary,
-                ),
-              ),
             ),
            ],
         );
       },
+    );
+  }
+}
+
+class _CollectionCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _CollectionCard({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.primary),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: AppColors.primary, size: 32),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
