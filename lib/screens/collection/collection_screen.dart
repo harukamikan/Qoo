@@ -37,6 +37,19 @@ class _TravelCollectionScreenState extends State<TravelCollectionScreen>
     _loadCollections();
     _loadApprovedStores();
   }
+  
+  /// 承認済みお店をカテゴリごとにまとめる。各カテゴリ最大6件。
+  Map<String, List<Store>> get _storesByCategory {
+    final map = <String, List<Store>>{};
+    for (final store in _approvedStores) {
+      final cat = store.category.isEmpty ? 'その他' : store.category;
+      map.putIfAbsent(cat, () => []);
+      if (map[cat]!.length < 6) {
+        map[cat]!.add(store);
+      }
+    }
+    return map;
+  }
 
   @override
   void dispose() {
@@ -311,7 +324,7 @@ class _TravelCollectionScreenState extends State<TravelCollectionScreen>
                                 );
                               },
                             ),
-                            if (_approvedStores.isNotEmpty) ...[
+                                                    if (_approvedStores.isNotEmpty) ...[
                               const SizedBox(height: 24),
                               Text(
                                 UiTranslations.t('お店コレクション'),
@@ -319,58 +332,69 @@ class _TravelCollectionScreenState extends State<TravelCollectionScreen>
                                     fontSize: 18, fontWeight: FontWeight.w900),
                               ),
                               const SizedBox(height: 8),
-                              GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 3,
-                                  crossAxisSpacing: 8,
-                                  mainAxisSpacing: 8,
-                                  childAspectRatio: 0.75,
+                              for (final entry in _storesByCategory.entries) ...[
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  child: Text(
+                                    '${entry.key}巡り',
+                                    style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold),
+                                  ),
                                 ),
-                                itemCount: _approvedStores.length,
-                                itemBuilder: (context, index) {
-                                  final store = _approvedStores[index];
-                                  return GestureDetector(
-                                    onTap: () => _postPhotoForStore(store),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFAF3E3),
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(
-                                            color: const Color(0xFFE5D9BF)),
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          Expanded(
-                                            child: Center(
-                                              child: Icon(
-                                                Icons.storefront,
-                                                color: Colors.grey.shade400,
-                                                size: 28,
+                                GridView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 3,
+                                    crossAxisSpacing: 8,
+                                    mainAxisSpacing: 8,
+                                    childAspectRatio: 0.75,
+                                  ),
+                                  itemCount: entry.value.length,
+                                  itemBuilder: (context, index) {
+                                    final store = entry.value[index];
+                                    return GestureDetector(
+                                      onTap: () => _postPhotoForStore(store),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFFAF3E3),
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(
+                                              color: const Color(0xFFE5D9BF)),
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            Expanded(
+                                              child: Center(
+                                                child: Icon(
+                                                  Icons.storefront,
+                                                  color: Colors.grey.shade400,
+                                                  size: 28,
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                                vertical: 6, horizontal: 4),
-                                            child: Text(
-                                              store.name,
-                                              textAlign: TextAlign.center,
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.bold),
+                                            Padding(
+                                              padding: const EdgeInsets.symmetric(
+                                                  vertical: 6, horizontal: 4),
+                                              child: Text(
+                                                store.name,
+                                                textAlign: TextAlign.center,
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.bold),
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  );
-                                },
-                              ),
+                                    );
+                                  },
+                                ),
+                              ],
                             ],
                           ],
                         ),
