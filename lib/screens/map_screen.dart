@@ -579,43 +579,139 @@ class _MapPageState extends State<MapPage> {
   void _showStoreInfo(Store store) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.storefront, color: Colors.deepPurple),
-                const SizedBox(width: 8),
-                Expanded(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 店舗名 & アイコン
+              Row(
+                children: [
+                  const Icon(Icons.storefront,
+                      color: AppColors.primary, size: 28),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      store.name,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // カテゴリ & 電話番号
+              Row(
+                children: [
+                  if (store.category.isNotEmpty) ...[
+                    Chip(
+                      label: Text(
+                        UiTranslations.t(store.category),
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      backgroundColor: Colors.purple.shade50,
+                      side: BorderSide.none,
+                      padding: EdgeInsets.zero,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  if (store.phoneNumber.isNotEmpty) ...[
+                    const Icon(Icons.phone, size: 16, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(
+                      store.phoneNumber,
+                      style:
+                          const TextStyle(fontSize: 14, color: Colors.black87),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // 住所
+              if (store.address.isNotEmpty) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.location_on_outlined,
+                        size: 18, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        store.address,
+                        style: const TextStyle(
+                            fontSize: 14, color: Colors.black87),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
+
+              // 説明文
+              if (store.description.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  store.description,
+                  style: const TextStyle(fontSize: 14, color: Colors.black54),
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              // ルール / ガイド セクション
+              if (store.rules.isNotEmpty) ...[
+                const Divider(height: 24),
+                Row(
+                  children: [
+                    const Icon(Icons.gavel_rounded,
+                        size: 18, color: Colors.amber),
+                    const SizedBox(width: 6),
+                    Text(
+                      UiTranslations.t('ルール / ガイド'),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amber.shade200),
+                  ),
                   child: Text(
-                    store.name,
+                    store.rules,
                     style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
+                      fontSize: 14,
+                      height: 1.4,
+                      color: Colors.black87,
+                    ),
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 12),
-            if (store.address.isNotEmpty)
-              Row(
-                children: [
-                  const Icon(Icons.location_on_outlined, size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(store.address)),
-                ],
-              ),
-            if (store.description.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(store.description),
+              const SizedBox(height: 16),
             ],
-            const SizedBox(height: 16),
-          ],
+          ),
         ),
       ),
     );
