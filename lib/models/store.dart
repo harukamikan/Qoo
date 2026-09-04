@@ -8,6 +8,7 @@ class Store {
   final String ownerUid;
   final String description;
   final String category;
+  final String rules; // ← 追加
   final bool isApproved;
   final DateTime? createdAt;
 
@@ -21,6 +22,7 @@ class Store {
     required this.ownerUid,
     this.description = '',
     this.category = 'その他',
+    this.rules = '', // ← 追加
     this.isApproved = false,
     this.createdAt,
   });
@@ -35,6 +37,7 @@ class Store {
       'ownerUid': ownerUid,
       'description': description,
       'category': category,
+      'rules': rules, // ← 追加
       'isApproved': isApproved,
     };
   }
@@ -50,6 +53,7 @@ class Store {
       ownerUid: map['ownerUid'] ?? id,
       description: map['description'] ?? '',
       category: map['category'] ?? 'その他',
+      rules: map['rules'] ?? '', // ← 追加
       isApproved: map['isApproved'] ?? false,
       createdAt: null,
     );

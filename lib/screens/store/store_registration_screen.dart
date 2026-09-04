@@ -9,14 +9,7 @@ import '../../services/store_repository.dart';
 import '../../services/ui_translations.dart';
 import '../../widgets/location_picker_sheet.dart';
 
-/// 店舗登録フォーム（店名 → 地図で位置指定 → 電話番号 → 登録）。
-///
-/// [AuthGate] は「ログイン済み・店舗ロール選択・stores/{uid} 未登録」の状態で
-/// この画面を表示する。保存が完了すると [AuthService.notifyProfileChanged] を
-/// 呼び、AuthGate が自動的に店舗ダッシュボード（[StoreHomeScreen]）へ切り替える。
-///
-/// 電話番号はSMS等での検証は行わず、連絡先として保存するだけ。
-/// 本人確認は既存のメール認証基盤（[User.sendEmailVerification]）に委ねる。
+/// 店舗登録フォーム（店名 → 地図で位置指定 → 電話番号 → カテゴリ → ルール/ガイド → 登録）。
 class StoreRegistrationScreen extends StatefulWidget {
   const StoreRegistrationScreen({super.key});
 
@@ -28,17 +21,19 @@ class StoreRegistrationScreen extends StatefulWidget {
 class _StoreRegistrationScreenState extends State<StoreRegistrationScreen> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _ruleController = TextEditingController();
 
   ll.LatLng? _position;
   String _address = '';
   String _category = 'グルメ';
-final List<String> _categories = ['グルメ', '文化', '温泉', '交通', 'その他'];
+  final List<String> _categories = ['グルメ', '文化', '温泉', '交通', 'その他'];
   bool _saving = false;
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _ruleController.dispose();
     super.dispose();
   }
 
@@ -87,6 +82,7 @@ final List<String> _categories = ['グルメ', '文化', '温泉', '交通', '�
           longitude: _position!.longitude,
           phoneNumber: _phoneController.text.trim(),
           category: _category,
+          rules: _ruleController.text.trim(),
         ),
       );
     } catch (e) {
@@ -96,9 +92,6 @@ final List<String> _categories = ['グルメ', '文化', '温泉', '交通', '�
       return;
     }
 
-    // 本人確認は既存のメール認証基盤に委ねる。ここで await すると送信が遅い/
-    // 失敗したときに画面遷移まで止まってしまうため、結果を待たずに投げっぱなしにする。
-    // 再送信は StoreHomeScreen から手動でも行える。
     final user = AuthService.instance.currentUser;
     if (user != null && !user.emailVerified) {
       unawaited(
@@ -109,7 +102,6 @@ final List<String> _categories = ['グルメ', '文化', '温泉', '交通', '�
       );
     }
 
-    // 画面遷移は AuthGate が再評価して行う。
     AuthService.instance.notifyProfileChanged();
   }
 
@@ -171,7 +163,7 @@ final List<String> _categories = ['グルメ', '文化', '温泉', '交通', '�
               ],
               const SizedBox(height: 16),
 
-              // 電話番号（検証なし・連絡先として保存するのみ）
+              // 電話番号
               TextField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
@@ -181,8 +173,9 @@ final List<String> _categories = ['グルメ', '文化', '温泉', '交通', '�
                   border: const OutlineInputBorder(),
                 ),
               ),
-              const SizedBox(height: 32),
-                            const SizedBox(height: 16),
+              const SizedBox(height: 16),
+
+              // カテゴリ選択
               DropdownButtonFormField<String>(
                 value: _category,
                 decoration: const InputDecoration(
@@ -196,8 +189,22 @@ final List<String> _categories = ['グルメ', '文化', '温泉', '交通', '�
                   if (value != null) setState(() => _category = value);
                 },
               ),
+              const SizedBox(height: 16),
+
+              // ルール / ガイド入力欄
+              TextField(
+                controller: _ruleController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: UiTranslations.t('ルール / ガイド'),
+                  hintText: UiTranslations.t('例: 店内撮影禁止、ワンオーダー制など'),
+                  alignLabelWithHint: true,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
               const SizedBox(height: 32),
 
+              // 登録ボタン
               FilledButton(
                 onPressed: _saving ? null : _submit,
                 child: Padding(
