@@ -73,5 +73,48 @@ static Future<List<Map<String, dynamic>>> fetchAllPostsForSpots(
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
+
+  
+  /// シートのいいねを取得（likerUidのセット）。sheetKey = "ownerUid_collectionId"
+  static Future<Set<String>> fetchSheetLikers(
+      String ownerUid, String collectionId) async {
+    final snap = await _db
+        .collection('collection_likes')
+        .where('sheetOwnerUid', isEqualTo: ownerUid)
+        .where('collectionId', isEqualTo: collectionId)
+        .get();
+    return snap.docs.map((d) => d.data()['likerUid'] as String).toSet();
+  }
+
+  /// いいねを追加する。
+  static Future<void> addSheetLike({
+    required String sheetOwnerUid,
+    required String collectionId,
+    required String likerUid,
+  }) async {
+    await _db.collection('collection_likes').add({
+      'sheetOwnerUid': sheetOwnerUid,
+      'collectionId': collectionId,
+      'likerUid': likerUid,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// いいねを取り消す。
+  static Future<void> removeSheetLike({
+    required String sheetOwnerUid,
+    required String collectionId,
+    required String likerUid,
+  }) async {
+    final snap = await _db
+        .collection('collection_likes')
+        .where('sheetOwnerUid', isEqualTo: sheetOwnerUid)
+        .where('collectionId', isEqualTo: collectionId)
+        .where('likerUid', isEqualTo: likerUid)
+        .get();
+    for (final doc in snap.docs) {
+      await doc.reference.delete();
+    }
+  }
   
 }
