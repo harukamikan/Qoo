@@ -170,90 +170,113 @@ void showLocationTipsModal(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Row(
-                                      children: [
-                                        Text(
-                                          c.userCountry,
-                                          style: const TextStyle(fontSize: 18),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          c.userName,
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 13,
-                                            color: isMyTip
-                                                ? AppColors.primary
-                                                : Colors.black87,
+                                    Expanded(
+                                      child: Row(
+                                        children: [
+                                          Text(
+                                            c.userCountry,
+                                            style:
+                                                const TextStyle(fontSize: 18),
                                           ),
-                                        ),
-                                        if (isMyTip) ...[
-                                          const SizedBox(width: 6),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 5,
-                                              vertical: 1.5,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: AppColors.primaryFaint,
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                              border: Border.all(
-                                                color: AppColors.primary,
-                                              ),
-                                            ),
-                                            child: const Text(
-                                              '自分',
+                                          const SizedBox(width: 8),
+                                          Flexible(
+                                            child: Text(
+                                              c.userName,
                                               style: TextStyle(
-                                                fontSize: 9.5,
-                                                color: AppColors.primary,
                                                 fontWeight: FontWeight.bold,
+                                                fontSize: 13,
+                                                color: isMyTip
+                                                    ? AppColors.primary
+                                                    : Colors.black87,
                                               ),
+                                              overflow: TextOverflow.ellipsis,
                                             ),
                                           ),
-                                        ],
-                                        if (index == 0 &&
-                                            currentList.length > 1) ...[
-                                          const SizedBox(width: 6),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 5,
-                                              vertical: 1.5,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.amber.shade100,
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                            child: const Text(
-                                              '👑 最多',
-                                              style: TextStyle(
-                                                fontSize: 9.5,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.brown,
+                                          if (isMyTip) ...[
+                                            const SizedBox(width: 6),
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 5,
+                                                vertical: 1.5,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.primaryFaint,
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                                border: Border.all(
+                                                  color: AppColors.primary,
+                                                ),
+                                              ),
+                                              child: const Text(
+                                                '自分',
+                                                style: TextStyle(
+                                                  fontSize: 9.5,
+                                                  color: AppColors.primary,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
                                               ),
                                             ),
-                                          ),
+                                          ],
+                                          if (index == 0 &&
+                                              currentList.length > 1) ...[
+                                            const SizedBox(width: 6),
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 5,
+                                                vertical: 1.5,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.amber.shade100,
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                              child: const Text(
+                                                '👑 最多',
+                                                style: TextStyle(
+                                                  fontSize: 9.5,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.brown,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ],
-                                      ],
+                                      ),
                                     ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 6,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: catColor.withOpacity(0.15),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        c.category,
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                          color: catColor,
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: catColor.withOpacity(0.15),
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            c.category,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: catColor,
+                                            ),
+                                          ),
                                         ),
-                                      ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          c.relativeTime,
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: AppColors.textGrey,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
