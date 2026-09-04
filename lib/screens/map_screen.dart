@@ -225,6 +225,7 @@ class _MapPageState extends State<MapPage> {
 
   final Map<String, int> _carouselIndices = {};
   Timer? _carouselTimer;
+  Timer? _locationTimer;
 
   static const String _helpfulPrefsKey = 'helpful_marked_comment_ids';
   Set<String> _myHelpfulIds = {};
@@ -286,8 +287,15 @@ class _MapPageState extends State<MapPage> {
     _loadEverything();
     _loadMyHelpfulIds();
     _startCarouselTimer();
+    _startLocationTimer();
     _alertService.start();
     _localHacks = LocalHackService.initialHacks;
+  }
+    void _startLocationTimer() {
+    _locationTimer = Timer.periodic(const Duration(minutes: 3), (_) {
+      if (!mounted) return;
+      _loadEverything(); // 3分ごとに位置と周辺データを更新
+    });
   }
 
   void _startCarouselTimer() {
@@ -308,6 +316,7 @@ class _MapPageState extends State<MapPage> {
   @override
   void dispose() {
     _carouselTimer?.cancel();
+    _locationTimer?.cancel();
     _alertService.stop();
     super.dispose();
   }
